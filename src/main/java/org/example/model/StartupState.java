@@ -58,6 +58,16 @@ public class StartupState {
     public boolean getHasBoostedToday() { return hasBoostedToday; }
 
     // ==========================================
+    // Setters
+    // ==========================================
+    public void setCash(int cash) { this.cash = cash; }
+    public void setMorale(int morale) { this.morale = morale; }
+    public void setCoffee(int coffee) { this.coffee = coffee; }
+    public void setComputeCredits(int credits) { this.computeCredits = credits; }
+    public void setHype(int hype) { this.hype = hype; }
+    public void setBugs(int bugs) { this.bugs = bugs; }
+
+    // ==========================================
     // State Queries (Read-Only)
     // ==========================================
 

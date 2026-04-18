@@ -145,7 +145,7 @@ public class GameRunner {
         }
     }
     private void triggerEvent() {
-        Event event = eventManager.getRandomEvent(state.getHype());
+        Event event = eventManager.getRandomEvent();
         display.printEventDescription(event);
 
         //nothing happens

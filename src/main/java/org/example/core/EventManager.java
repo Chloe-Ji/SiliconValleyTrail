@@ -49,7 +49,7 @@ public class EventManager {
                         new Effects(0, 0, 0, 0, 0, 0))
         );
     }
-    public Event getRandomEvent(int hype) {
+    public Event getRandomEvent() {
         return eventPool.get(random.nextInt(eventPool.size()));
     }
 }
