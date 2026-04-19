@@ -58,16 +58,18 @@ You manage a startup team traveling through 10 real Silicon Valley locations. Ea
 
 ### Actions
 
-| # | Action | Effect |
-|---|--------|--------|
-| 1 | Travel to next location | Spend cash, morale drops (worse in bad weather) |
-| 2 | Rest and recover | Morale restored significantly |
-| 3 | Work on product | Uses compute credits, hype increases, bugs increase |
-| 4 | Fix bugs | Bugs decrease, morale drops slightly |
-| 5 | Marketing push | Costs $1,500, hype increases |
-| 6 | Coffee boost | Uses coffee, morale boost (once per day) |
-| 7 | Save game | Save progress to file |
-| 8 | Quit to menu | Return to main menu |
+Each turn you pick one of these. Options 1–5 advance the day; 6–8 do not.
+
+| # | Action | Effect | Advances day? |
+|---|--------|--------|---|
+| 1 | Travel to next location | Spend cash, morale drops (worse in bad weather). Only this action fires a random event on arrival. | ✅ |
+| 2 | Rest and recover | Morale restored significantly | ✅ |
+| 3 | Work on product | Uses compute credits, hype increases, bugs increase | ✅ |
+| 4 | Fix bugs | Bugs decrease, morale drops slightly | ✅ |
+| 5 | Marketing push | Costs $1,500, hype increases | ✅ |
+| 6 | Coffee boost | Uses coffee, morale boost (once per day) | ❌ |
+| 7 | Save game (explicit) | Writes `save.json` with a "💾 Game saved!" banner | ❌ |
+| 8 | Quit to menu | Returns to the main menu without losing progress | ❌ |
 
 ### Resources
 
@@ -84,6 +86,33 @@ You manage a startup team traveling through 10 real Silicon Valley locations. Ea
 
 - **Win**: Reach San Francisco with resources intact
 - **Lose**: Cash ≤ 0 (bankrupt) or Morale ≤ 0 (burnout)
+
+### Saving, Quitting, and Auto-save
+
+The game writes your progress to `save.json` (a single-slot save in the project root) in three ways:
+
+| Trigger | What it does | Feedback |
+|---|---|---|
+| **Auto-save** — at the end of every turn that advances the day | Writes silently so Ctrl+C, terminal close, power loss, or crash never loses more than the current action | None (silent) |
+| **Manual save** — menu option 7 | Writes explicitly with confirmation | "💾 Game saved!" banner |
+| **Quit to menu** — option 8 | Does *not* save, but the previous turn's auto-save is already on disk, so your state survives | None |
+
+**What this means in practice:**
+
+- You can exit the game at any time — pick **8** from the action menu, or just press **Ctrl+C**. Your progress survives either way. On next launch, pick **Load Game** from the main menu to resume.
+- One subtle behavior on a fatal turn (cash ≤ 0 or morale ≤ 0): the auto-save is **skipped**, so the save on disk reflects the turn *before* death. Load Game gives you one shot to replay the fatal choice instead of instantly re-seeing Game Over.
+- To start fresh, pick **New Game** from the main menu — this overwrites the current save on the next auto-save.
+
+### Exiting the Game
+
+| How | What happens |
+|---|---|
+| Menu option **8 — Quit to menu** | Clean exit to main menu; pick **Quit** (3) to leave the JVM. Save survives. |
+| Main menu option **3 — Quit** | Exits the process. Save survives. |
+| **Ctrl+C** anywhere | Abrupt JVM exit (SIGINT). Save from last completed turn survives. |
+| Terminal close / SSH disconnect | Same as Ctrl+C — last turn's auto-save survives. |
+
+There's no "are you sure?" confirmation on Ctrl+C — that would require a shutdown hook prompting on stdin, which fights the user's clear "exit now" intent and is fragile across terminals. Auto-save-every-turn gives you the same safety with zero prompts. See the [Design Notes](#design-notes) section for the full reasoning.
 
 ### Example Session
 ```
@@ -109,6 +138,8 @@ Manage your resources wisely:
   📢 Hype - Public interest in your startup
   💻 Compute - Cloud credits for building product
   🐛 Bugs - Keep them under control
+
+💾 Your progress auto-saves at the end of every day.
 
 Good luck, founder!
 ============================================================
@@ -236,6 +267,18 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - `RouteInfo` captures the single leg result from `MappingService` (miles, traffic-aware minutes, free-flow minutes, heavy-traffic flag). It is never persisted — consumed and discarded inside `GameRunner.travel`.
 - Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. The game also **auto-saves at the end of every turn** via `SaveManager.saveQuietly(state)` so Ctrl+C, a terminal close, or a crash never loses progress. Auto-save is skipped on a losing turn so the on-disk save lets the player retry the fatal day rather than instantly replaying Game Over.
 
+### Save, Quit, and Ctrl+C UX
+
+Auto-save-every-turn was chosen over a shutdown hook that prompts "do you want to save?" for three reasons:
+
+1. **Shutdown hooks are brittle for interactive prompts.** They run on a separate thread while the main thread is still blocked on `Scanner.nextLine()`. Reading stdin from the hook works inconsistently across terminals (Terminal.app, iTerm, tmux, VS Code's integrated shell all behave differently). Output can race with the shutdown sequence and look garbled.
+2. **A second Ctrl+C force-kills the JVM** before the hook completes. Impatient users double-tap Ctrl+C routinely, which would defeat the prompt entirely.
+3. **Auto-save covers more failure modes.** A shutdown-hook prompt only catches clean SIGINT. Auto-save also covers terminal close, SSH disconnect, power loss, kernel panic, `kill -9`, and accidental `Cmd+Q` — none of those fire a JVM shutdown hook reliably.
+
+The tradeoff is that the menu's explicit "Save game" option (#7) is now slightly redundant — but it's kept because the "💾 Game saved!" banner is psychological reassurance for users who want to explicitly checkpoint before a risky turn.
+
+The `isGameOver()` guard around auto-save is a small but important nuance: without it, the fatal turn would overwrite the save with a dead state and Load Game would instantly replay Game Over. With it, the save on disk reflects the turn *before* death, giving the player exactly one retry of the fatal choice.
+
 ### Error Handling
 
 - Open-Meteo timeout/failure: caught in try-catch, falls back to mock weather with a warning message. Game never crashes due to network issues.
@@ -244,6 +287,7 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - Missing save file: `SaveManager.load()` returns null, and `GameRunner` stays on the main menu with a message.
 - Resource boundaries: inline clamping in each mutation method prevents morale and hype from exceeding 0–100, and coffee/compute/bugs from going negative. Cash is intentionally not clamped — negative cash triggers the `isBankrupt()` game-over condition.
 - Both APIs down simultaneously: both degrade independently; the game uses randomized mock weather, skips Mapbox, and plays exactly like the offline version.
+- Ctrl+C mid-turn: JVM exits immediately. Nothing new is written, but the previous turn's auto-save is already on disk. Load Game on next launch drops the player back at the top of the current turn. See the "Save, Quit, and Ctrl+C UX" subsection above for the full rationale.
 
 ### Tradeoffs & "If I Had More Time"
 
