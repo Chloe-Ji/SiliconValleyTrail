@@ -27,6 +27,13 @@ public class GameRunner {
     private static final int LONG_LEG_SURCHARGE = 100;
     private static final int HEAVY_TRAFFIC_MORALE_DROP = 5;
 
+    // ANSI color escapes for the startup warning. Modern terminals (iTerm,
+    // Terminal.app, Windows Terminal, most IDE consoles) render these; legacy
+    // cmd.exe shows the raw codes but that's acceptable noise for a
+    // non-critical informational message.
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_RESET = "\u001B[0m";
+
     private final RouteMap routeMap;
     private final EventManager eventManager;
     private final WeatherService weatherService;
@@ -91,8 +98,8 @@ public class GameRunner {
      */
     private void printMapboxHintIfUnconfigured() {
         if (!mappingService.isConfigured()) {
-            System.out.println("🗺️  Mapbox not configured — traffic-aware travel features disabled.");
-            System.out.println("     Set MAPBOX_TOKEN in your environment to enable (see .env.example).");
+            System.out.println(ANSI_RED + "🗺️  Mapbox not configured — traffic-aware travel features disabled.");
+            System.out.println("     Add MAPBOX_TOKEN to .env or export it in your shell to enable." + ANSI_RESET);
         }
     }
 
