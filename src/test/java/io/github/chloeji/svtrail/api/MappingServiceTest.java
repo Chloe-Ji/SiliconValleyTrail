@@ -3,6 +3,7 @@ package io.github.chloeji.svtrail.api;
 import io.github.chloeji.svtrail.model.Location;
 import io.github.chloeji.svtrail.model.RouteInfo;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -10,6 +11,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandler;
 import java.net.http.HttpResponse.PushPromiseHandler;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -129,6 +132,84 @@ public class MappingServiceTest {
     void getRouteInfo_returnsNullOnEmptyRoutes() {
         MappingService service = new MappingService(new StubHttpClient("{\"routes\":[]}", 200), "pk.test");
         assertNull(service.getRouteInfo(SAN_JOSE, SANTA_CLARA));
+    }
+
+    // ==========================================
+    // Dotenv fallback
+    // ==========================================
+
+    @Test
+    void readTokenFromDotEnv_returnsTokenFromValidFile(@TempDir Path tempDir) throws IOException {
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "# a comment\nMAPBOX_TOKEN=pk.from_file\nOTHER=ignored\n");
+        assertEquals("pk.from_file", MappingService.readTokenFromDotEnv(dotenv));
+    }
+
+    @Test
+    void readTokenFromDotEnv_returnsNullWhenFileMissing(@TempDir Path tempDir) {
+        assertNull(MappingService.readTokenFromDotEnv(tempDir.resolve("nope.env")));
+    }
+
+    @Test
+    void readTokenFromDotEnv_returnsNullWhenKeyMissing(@TempDir Path tempDir) throws IOException {
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "OTHER_KEY=val\nHOME=/tmp\n");
+        assertNull(MappingService.readTokenFromDotEnv(dotenv));
+    }
+
+    @Test
+    void readTokenFromDotEnv_skipsCommentedOutToken(@TempDir Path tempDir) throws IOException {
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "# MAPBOX_TOKEN=old\nMAPBOX_TOKEN=pk.real\n");
+        assertEquals("pk.real", MappingService.readTokenFromDotEnv(dotenv));
+    }
+
+    @Test
+    void readTokenFromDotEnv_stripsDoubleQuotes(@TempDir Path tempDir) throws IOException {
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "MAPBOX_TOKEN=\"pk.quoted\"\n");
+        assertEquals("pk.quoted", MappingService.readTokenFromDotEnv(dotenv));
+    }
+
+    @Test
+    void readTokenFromDotEnv_stripsSingleQuotes(@TempDir Path tempDir) throws IOException {
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "MAPBOX_TOKEN='pk.quoted'\n");
+        assertEquals("pk.quoted", MappingService.readTokenFromDotEnv(dotenv));
+    }
+
+    @Test
+    void readTokenFromDotEnv_returnsEmptyForBlankValue(@TempDir Path tempDir) throws IOException {
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "MAPBOX_TOKEN=\n");
+        // Empty string, not null — resolveToken treats empty as unconfigured
+        // because isConfigured checks isBlank().
+        assertEquals("", MappingService.readTokenFromDotEnv(dotenv));
+    }
+
+    @Test
+    void resolveToken_prefersEnvVarOverDotEnv(@TempDir Path tempDir) throws IOException {
+        // Env var precedence can't be directly asserted here without mutating the
+        // process env, which JUnit doesn't make easy. Instead verify that with
+        // env var unset, resolveToken falls through to the dotenv file.
+        Path dotenv = tempDir.resolve(".env");
+        Files.writeString(dotenv, "MAPBOX_TOKEN=pk.from_dotenv\n");
+        String resolved = MappingService.resolveToken(dotenv);
+        // If MAPBOX_TOKEN is set in the test runner's env it would win; in CI or
+        // a clean shell it will be null/blank and the dotenv value wins.
+        if (System.getenv("MAPBOX_TOKEN") == null || System.getenv("MAPBOX_TOKEN").isBlank()) {
+            assertEquals("pk.from_dotenv", resolved);
+        } else {
+            assertEquals(System.getenv("MAPBOX_TOKEN"), resolved);
+        }
+    }
+
+    @Test
+    void resolveToken_returnsNullWhenNoSource(@TempDir Path tempDir) {
+        Path missing = tempDir.resolve("nonexistent.env");
+        if (System.getenv("MAPBOX_TOKEN") == null || System.getenv("MAPBOX_TOKEN").isBlank()) {
+            assertNull(MappingService.resolveToken(missing));
+        }
     }
 
     // ==========================================

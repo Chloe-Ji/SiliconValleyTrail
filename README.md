@@ -28,12 +28,14 @@ When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distan
 
 **Setting up Mapbox (optional):**
 ```bash
-cp .env.example .env         # local copy ignored by git
-# paste your token into .env, then:
-export MAPBOX_TOKEN=pk.xxx
+cp .env.example .env         # local copy; .env is git-ignored
+# edit .env and set MAPBOX_TOKEN=pk.your-token-here
 mvn exec:java
-# or inline:
-MAPBOX_TOKEN=pk.xxx mvn exec:java
+```
+The game resolves the token from the `MAPBOX_TOKEN` environment variable first, and falls back to reading a `MAPBOX_TOKEN=` line from `.env` at the project root. You can also skip the file entirely:
+```bash
+MAPBOX_TOKEN=pk.xxx mvn exec:java     # inline, no file needed
+export MAPBOX_TOKEN=pk.xxx            # persistent for the current shell
 ```
 Sign up for a free Mapbox token (no credit card) at https://account.mapbox.com/access-tokens/.
 
@@ -223,7 +225,7 @@ Why this API: The spec asked for at least one external API and suggested Mapping
 
 How it affects gameplay: On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` for current conditions, `driving` for the free-flow baseline). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit. If distance > 6 miles the leg is a "long leg" and a $100 fuel surcharge is deducted. Both effects stack with the base travel cost and the weather penalty.
 
-Token handling: The token is read from `MAPBOX_TOKEN` at construction time. `.env.example` documents the variable and is the only piece of Mapbox config checked into git — the actual token lives outside source control. When the token is missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line hint at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
+Token handling: `MappingService.resolveToken()` checks two sources in order — the `MAPBOX_TOKEN` environment variable (standard for CI and shells) and then a `MAPBOX_TOKEN=` entry inside a `.env` file at the project root (the convention most Node/Python/Ruby devs expect). `.env.example` documents the variable, is committed as an empty placeholder, and is the only Mapbox config checked into git; the real `.env` is in `.gitignore`. When both sources are missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line hint at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
 
 ### Data Modeling
 
@@ -253,12 +255,12 @@ Token handling: The token is read from `MAPBOX_TOKEN` at construction time. `.en
 
 ### Tests
 
-Unit tests cover core game mechanics — 82 tests total across four classes:
+Unit tests cover core game mechanics — 91 tests total across four classes:
 
 - **StartupStateTest**: Resource mutations, boundary conditions (clamp behavior), game-over triggers (bankrupt, burnout), coffee withdrawal logic, and daily settlement. (42 tests)
 - **EventManagerTest**: Random event generation, effect application, null-choice event handling, and weather-conditional filtering (verifies hot-weather events can't fire in clear skies and vice versa). (16 tests)
 - **RouteMapTest**: Location retrieval, destination detection, progress calculation, distance between stops. (12 tests)
-- **MappingServiceTest**: Token configuration detection, short-circuit when unconfigured, JSON parsing, heavy-traffic flagging (ratio > 1.5), and graceful degradation on network failure, non-2xx status, malformed JSON, and empty routes. Uses an in-test `HttpClient` stub so the tests run offline. (12 tests)
+- **MappingServiceTest**: Token configuration detection, short-circuit when unconfigured, JSON parsing, heavy-traffic flagging (ratio > 1.5), graceful degradation on network failure, non-2xx status, malformed JSON, and empty routes, plus the two-tier token resolution (env var → `.env` file) — comments, quoted values, missing key, and missing file. Uses an in-test `HttpClient` stub and JUnit's `@TempDir` so the tests run offline and don't touch the real `.env`. (21 tests)
 
 ## AI Usage
 
