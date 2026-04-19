@@ -1,8 +1,11 @@
 package io.github.chloeji.svtrail.core;
 
+import io.github.chloeji.svtrail.api.MappingService;
 import io.github.chloeji.svtrail.api.WeatherService;
+import io.github.chloeji.svtrail.model.Effects;
 import io.github.chloeji.svtrail.model.Event;
 import io.github.chloeji.svtrail.model.Location;
+import io.github.chloeji.svtrail.model.RouteInfo;
 import io.github.chloeji.svtrail.model.StartupState;
 import io.github.chloeji.svtrail.model.WeatherData;
 import io.github.chloeji.svtrail.ui.DisplayManager;
@@ -12,13 +15,22 @@ import io.github.chloeji.svtrail.util.SaveManager;
 /**
  * Top-level game controller. Wires together route, events, weather, input,
  * display, and persistence, and drives the main menu and per-day game loop.
+ * <p>
+ * Events fire only on arrival at a new location via {@link #travel(WeatherData)}.
+ * Other actions (rest, build, fix bugs, marketing) resolve their effect and
+ * pause but never trigger a random event — matching the spec's "event at each
+ * location after movement" rule.
  */
 public class GameRunner {
     private static final int MARKETING_MIN_CASH = 1500;
+    private static final int LONG_LEG_MILES = 6;
+    private static final int LONG_LEG_SURCHARGE = 100;
+    private static final int HEAVY_TRAFFIC_MORALE_DROP = 5;
 
     private final RouteMap routeMap;
     private final EventManager eventManager;
     private final WeatherService weatherService;
+    private final MappingService mappingService;
     private final SaveManager saveManager;
     private final InputHandler inputHandler;
     private final DisplayManager display;
@@ -31,6 +43,7 @@ public class GameRunner {
         routeMap = new RouteMap();
         eventManager = new EventManager();
         weatherService = new WeatherService();
+        mappingService = new MappingService();
         saveManager = new SaveManager();
         inputHandler = new InputHandler();
         display = new DisplayManager();
@@ -45,6 +58,7 @@ public class GameRunner {
      * game loop for new or loaded games until the player chooses to quit.
      */
     public void start() {
+        printMapboxHintIfUnconfigured();
         while (true) {
             display.printMainMenu();
             int choice = inputHandler.getUserChoice(1, 3);
@@ -66,6 +80,19 @@ public class GameRunner {
                     return;
                 }
             }
+        }
+    }
+
+    /**
+     * Prints a one-time informational banner if the Mapbox token is absent,
+     * so a reviewer cloning the repo notices the optional feature and the
+     * env-var setup without having to read the README end-to-end. Silent
+     * when the token is configured — no nagging.
+     */
+    private void printMapboxHintIfUnconfigured() {
+        if (!mappingService.isConfigured()) {
+            System.out.println("🗺️  Mapbox not configured — traffic-aware travel features disabled.");
+            System.out.println("     Set MAPBOX_TOKEN in your environment to enable (see .env.example).");
         }
     }
 
@@ -109,25 +136,49 @@ public class GameRunner {
     // ==========================================
 
     private void travel(WeatherData weather) {
+        Location origin = routeMap.getLocation(state.getCurrentIndex());
+        Location next = routeMap.getLocation(state.getCurrentIndex() + 1);
+        applyMapboxEffects(origin, next);
+
         state.travelToNextStop(weather.isBadWeather());
         Location arrived = routeMap.getLocation(state.getCurrentIndex());
         System.out.println("\n🚗 Your team hits the road...");
         System.out.println("✅ Arrived at " + arrived.name() + "!");
-        triggerEvent();
+        triggerEvent(weather);
+    }
+
+    /**
+     * Queries Mapbox for the current leg and, when traffic or distance is
+     * notable, applies a corresponding gameplay effect before the base
+     * travel cost is charged. Silently no-ops when Mapbox is unavailable.
+     */
+    private void applyMapboxEffects(Location origin, Location next) {
+        if (next == null) return;
+        RouteInfo info = mappingService.getRouteInfo(origin, next);
+        if (info == null) return;
+
+        if (info.isHeavyTraffic()) {
+            System.out.println("\n🚦 Heavy traffic on the route — team stuck in the car.");
+            state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0, 0, 0));
+        }
+        if (info.miles() > LONG_LEG_MILES) {
+            System.out.println("📏 Long leg today (" + Math.round(info.miles()) + " mi) — extra fuel cost.");
+            state.applyEventEffects(new Effects(-LONG_LEG_SURCHARGE, 0, 0, 0, 0, 0));
+        }
     }
 
     private void rest() {
         System.out.println("\n😴 Your team takes a break...");
         state.rest();
         System.out.println("✅ Team feels refreshed!");
-        triggerEvent();
+        inputHandler.waitForEnter();
     }
 
     private void workOnProduct() {
         System.out.println("\n💻 Your team focuses on the product...");
         System.out.println("\n✅ Productive day, but team is tired.");
         state.buildProduct();
-        triggerEvent();
+        inputHandler.waitForEnter();
     }
 
     private void fixBugs() {
@@ -137,7 +188,7 @@ public class GameRunner {
         }
         state.fixBugs();
         System.out.println("\n🔧 Team spent the day squashing bugs. Tiring but necessary.");
-        triggerEvent();
+        inputHandler.waitForEnter();
     }
 
     private void marketingPush() {
@@ -151,7 +202,7 @@ public class GameRunner {
         }
         state.marketingPush();
         System.out.println("\n📢 Campaign launched! Hype increased. (Cost: $" + MARKETING_MIN_CASH + ")");
-        triggerEvent();
+        inputHandler.waitForEnter();
     }
 
     private void boostEnergy() {
@@ -164,8 +215,8 @@ public class GameRunner {
         }
     }
 
-    private void triggerEvent() {
-        Event event = eventManager.getRandomEvent();
+    private void triggerEvent(WeatherData weather) {
+        Event event = eventManager.getRandomEvent(weather);
         display.printEventDescription(event);
 
         // Null choice labels indicate a "nothing happens" event — apply its
