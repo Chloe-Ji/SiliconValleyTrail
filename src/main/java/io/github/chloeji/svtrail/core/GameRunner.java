@@ -1,15 +1,21 @@
-package org.example.core;
+package io.github.chloeji.svtrail.core;
 
-import org.example.api.WeatherService;
-import org.example.model.Event;
-import org.example.model.Location;
-import org.example.model.StartupState;
-import org.example.model.WeatherData;
-import org.example.ui.DisplayManager;
-import org.example.util.InputHandler;
-import org.example.util.SaveManager;
+import io.github.chloeji.svtrail.api.WeatherService;
+import io.github.chloeji.svtrail.model.Event;
+import io.github.chloeji.svtrail.model.Location;
+import io.github.chloeji.svtrail.model.StartupState;
+import io.github.chloeji.svtrail.model.WeatherData;
+import io.github.chloeji.svtrail.ui.DisplayManager;
+import io.github.chloeji.svtrail.util.InputHandler;
+import io.github.chloeji.svtrail.util.SaveManager;
 
+/**
+ * Top-level game controller. Wires together route, events, weather, input,
+ * display, and persistence, and drives the main menu and per-day game loop.
+ */
 public class GameRunner {
+    private static final int MARKETING_MIN_CASH = 1500;
+
     private final RouteMap routeMap;
     private final EventManager eventManager;
     private final WeatherService weatherService;
@@ -17,6 +23,10 @@ public class GameRunner {
     private final InputHandler inputHandler;
     private final DisplayManager display;
     private StartupState state;
+
+    /**
+     * Creates a new runner with default collaborators.
+     */
     public GameRunner() {
         routeMap = new RouteMap();
         eventManager = new EventManager();
@@ -30,6 +40,10 @@ public class GameRunner {
     // Main Menu
     // ==========================================
 
+    /**
+     * Entry point for the game. Displays the main menu and dispatches to the
+     * game loop for new or loaded games until the player chooses to quit.
+     */
     public void start() {
         while (true) {
             display.printMainMenu();
@@ -54,9 +68,11 @@ public class GameRunner {
             }
         }
     }
+
     // ==========================================
     // Core Game Loop
     // ==========================================
+
     private void gameLoop() {
         while (!state.isGameOver()) {
             Location current = routeMap.getLocation(state.getCurrentIndex());
@@ -71,7 +87,7 @@ public class GameRunner {
             display.printDayStatus(state, current, weather, progress);
             display.printActionMenu();
 
-            int choice = inputHandler.getUserChoice(1, 7);
+            int choice = inputHandler.getUserChoice(1, 8);
             switch (choice) {
                 case 1 -> travel(weather);
                 case 2 -> rest();
@@ -91,6 +107,7 @@ public class GameRunner {
     // ==========================================
     // Player Actions
     // ==========================================
+
     private void travel(WeatherData weather) {
         state.travelToNextStop(weather.isBadWeather());
         Location arrived = routeMap.getLocation(state.getCurrentIndex());
@@ -105,6 +122,7 @@ public class GameRunner {
         System.out.println("✅ Team feels refreshed!");
         triggerEvent();
     }
+
     private void workOnProduct() {
         System.out.println("\n💻 Your team focuses on the product...");
         System.out.println("\n✅ Productive day, but team is tired.");
@@ -122,19 +140,20 @@ public class GameRunner {
         triggerEvent();
     }
 
-
     private void marketingPush() {
         System.out.println("\n📢 You launch a marketing campaign...");
 
-        if (state.getCash() < 1500) {
-            System.out.println("\n❌ Not enough cash for marketing! Need $1500");
+        // Bail out without consuming a day if the player cannot afford the
+        // campaign — this lets them reselect a different action.
+        if (state.getCash() < MARKETING_MIN_CASH) {
+            System.out.println("\n❌ Not enough cash for marketing! Need $" + MARKETING_MIN_CASH);
             return;
-            //fail to marketingPush, so choose another option
         }
         state.marketingPush();
-        System.out.println("\n📢 Campaign launched! Hype increased. (Cost: $1500)");
+        System.out.println("\n📢 Campaign launched! Hype increased. (Cost: $" + MARKETING_MIN_CASH + ")");
         triggerEvent();
     }
+
     private void boostEnergy() {
         if (state.getHasBoostedToday()) {
             System.out.println("\n❌ Already had extra coffee today!");
@@ -144,11 +163,13 @@ public class GameRunner {
             System.out.println("\n❌ Not enough coffee for a boost!");
         }
     }
+
     private void triggerEvent() {
         Event event = eventManager.getRandomEvent();
         display.printEventDescription(event);
 
-        //nothing happens
+        // Null choice labels indicate a "nothing happens" event — apply its
+        // (typically zero) effects silently rather than prompting the player.
         if (event.choice1() == null) {
             state.applyEventEffects(event.choice1Effects());
         } else {
@@ -160,6 +181,8 @@ public class GameRunner {
                 state.applyEventEffects(event.choice2Effects());
             }
         }
-        inputHandler.waitForEnter(); //Let players have time to read info
+        // Pause so the player has time to read the event outcome before the
+        // next day's status overwrites the terminal.
+        inputHandler.waitForEnter();
     }
 }

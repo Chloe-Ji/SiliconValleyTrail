@@ -1,21 +1,34 @@
-package org.example.core;
-import org.example.model.Effects;
-import org.example.model.Event;
+package io.github.chloeji.svtrail.core;
 
+import io.github.chloeji.svtrail.model.Effects;
+import io.github.chloeji.svtrail.model.Event;
 
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Holds the pool of random events the player may encounter and returns one at
+ * random per call. The {@link Random} source is injectable so tests can drive
+ * deterministic sequences.
+ */
 public class EventManager {
     private final List<Event> eventPool;
     private final Random random;
 
-    // 生产代码调用无参构造： 内部自动 new Random()，事件完全随机
+    /**
+     * Creates an event manager backed by a fresh, unseeded {@link Random}.
+     * Intended for production use where full randomness is desired.
+     */
     public EventManager() {
-        this(new Random()); //调用同一个类里的另一个构造器
+        this(new Random());
     }
 
-    // 支持注入 Random，方便测试
+    /**
+     * Creates an event manager with a caller-supplied random source. Intended
+     * for tests that need deterministic event sequences.
+     *
+     * @param random the random source used to pick events
+     */
     public EventManager(Random random) {
         this.random = random;
         eventPool = List.of(
@@ -49,6 +62,12 @@ public class EventManager {
                         new Effects(0, 0, 0, 0, 0, 0))
         );
     }
+
+    /**
+     * Picks one event at random from the pool with uniform probability.
+     *
+     * @return a non-null {@link Event} drawn from the event pool
+     */
     public Event getRandomEvent() {
         return eventPool.get(random.nextInt(eventPool.size()));
     }

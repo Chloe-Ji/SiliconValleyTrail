@@ -4,64 +4,67 @@ A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Vall
 
 ## Quick Start
 ### Prerequisites
-  Java 17+
-  Maven 3.6+
+
+- Java 21+
+- Maven 3.6+
 
 ### Build & Run
-  git clone https://github.com/Chloe-Ji/SiliconValleyTrail.git
-  cd SiliconValleyTrail
-  mvn clean compile exec:java
 
-### API Key Setup 
-  The game uses OpenWeatherMap API for real-time weather data. Weather affects travel cost and team morale.
-  OPENWEATHER_API_KEY=
+```bash
+git clone https://github.com/Chloe-Ji/SiliconValleyTrail.git
+cd SiliconValleyTrail
+mvn clean compile exec:java
+```
 
+### Weather API
 
-### Running Without an API Key (Mock Mode)
-  No setup needed. If no API key is found or the API is unavailable, the game automatically uses randomized mock weather data. Simply run:
-  mvn clean compile exec:java
-
-  The game is fully playable without any API key.
+The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather — **no API key or account required**. Weather affects travel cost and team morale. If the network is unavailable or the API call fails, the game automatically falls back to randomized mock weather so it stays fully playable offline.
 
 ### Run Tests
-  mvn test
 
-  To run a specific test class:
-  mvn test -Dtest=StartupStateTest
+```bash
+mvn test
+```
+
+To run a specific test class:
+
+```bash
+mvn test -Dtest=StartupStateTest
+```
 
 
 ## How to Play
 
-  You manage a startup team traveling through 10 real Silicon Valley locations. Each day you choose an action, encounter random events, and try to reach San Francisco   before your resources run out.
+You manage a startup team traveling through 10 real Silicon Valley locations. Each day you choose an action, encounter random events, and try to reach San Francisco before your resources run out.
 
 ### Actions
 
 | # | Action | Effect |
 |---|--------|--------|
-| 1 | Travel to next location | Spend cash, morale drops (worse in bad weather) 
-| 2 | Rest and recover | Morale restored significantly 
-| 3 | Work on product | Uses compute credits, hype increases, bugs increase 
-| 4 | Fix bugs | Bugs decrease, morale drops slightly 
-| 5 | Marketing push | Costs $1,500, hype increases 
-| 6 | Coffee boost | Uses coffee, morale boost (once per day) 
-| 7 | Save game | Save progress to file 
-| 8 | Quit to menu | Return to main menu 
+| 1 | Travel to next location | Spend cash, morale drops (worse in bad weather) |
+| 2 | Rest and recover | Morale restored significantly |
+| 3 | Work on product | Uses compute credits, hype increases, bugs increase |
+| 4 | Fix bugs | Bugs decrease, morale drops slightly |
+| 5 | Marketing push | Costs $1,500, hype increases |
+| 6 | Coffee boost | Uses coffee, morale boost (once per day) |
+| 7 | Save game | Save progress to file |
+| 8 | Quit to menu | Return to main menu |
 
 ### Resources
 
 | Resource | Description |
 |----------|-------------|
-| 💰 Cash | Funds for travel and operations. Hits zero = bankruptcy (game over) 
-| 😊 Morale | Team happiness (0–100). Hits zero = burnout (game over) 
-| ☕ Coffee | Essential fuel. 2 days without daily supply = morale collapse 
-| 📢 Hype | Public interest (0–100). Higher hype boosts event rewards 
-| 💻 Compute | Cloud credits for building product 
-| 🐛 Bugs | Code defects. Hits 50 = product death (game over) 
+| 💰 Cash | Funds for travel and operations. Hits zero = bankruptcy (game over) |
+| 😊 Morale | Team happiness (0–100). Hits zero = burnout (game over) |
+| ☕ Coffee | Essential fuel. 2 days without daily supply = morale collapse |
+| 📢 Hype | Public interest (0–100). Higher hype boosts event rewards |
+| 💻 Compute | Cloud credits for building product |
+| 🐛 Bugs | Code defects. Accumulate when building product; fix them to keep the codebase healthy |
 
 ### Win & Lose Conditions
-  Win: Reach San Francisco with resources intact
-  
-  Lose: Cash ≤ 0 (bankrupt), Morale ≤ 0 (burnout), or Bugs ≥ 50 (product dead)
+
+- **Win**: Reach San Francisco with resources intact
+- **Lose**: Cash ≤ 0 (bankrupt) or Morale ≤ 0 (burnout)
 
 ### Example Session
 ```
@@ -140,8 +143,11 @@ Press Enter to continue...
 ```
 
 ## Architecture
+
+All sources live under the `io.github.chloeji.svtrail` package.
+
 ```
-src/
+src/main/java/io/github/chloeji/svtrail/
 ├── Main.java                  # Entry point
 ├── model/
 │   ├── StartupState.java      # Game state and resource management
@@ -154,20 +160,19 @@ src/
 │   ├── RouteMap.java          # 10 real locations from San Jose to SF
 │   └── EventManager.java      # Random event pool with choices
 ├── api/
-│   └── WeatherService.java    # OpenWeatherMap integration with fallback
+│   └── WeatherService.java    # Open-Meteo integration with fallback
 ├── ui/
 │   └── DisplayManager.java    # All display/print logic
 └── util/
-    ├── InputHandler.java       # Input validation
-    └── SaveManager.java        # JSON save/load with Gson
+    ├── InputHandler.java      # Input validation
+    └── SaveManager.java       # JSON save/load with Gson
 ```
 
 ### Dependencies
 
 | Library | Purpose |
 |---------|---------|
-| Gson 2.11.0 | JSON parsing for API responses and save/load |
-| dotenv-java 3.0.0 | Load API keys from `.env` file |
+| Gson 2.10.1 | JSON parsing for API responses and save/load |
 | JUnit 5 | Unit testing |
 
 ## Design Notes
@@ -179,20 +184,20 @@ Balance is built around resource tension. Cash drains daily ($1,000 fixed expens
 
 Coffee boost does not consume a turn (limited to once per day), allowing tactical use alongside other actions. Save and quit also do not consume a turn.
 
-### Why OpenWeatherMap & How It Affects Gameplay
+### Why Open-Meteo & How It Affects Gameplay
 
-Why this API: Weather is a natural gameplay modifier — it affects travel cost and morale. OpenWeatherMap provides a free tier with a straightforward JSON response format, and requires an API key, which demonstrates proper secret management with `.env` files.
+Why this API: Weather is a natural gameplay modifier — it affects travel cost and morale. Open-Meteo provides a free, key-less HTTP endpoint with a minimal JSON response, so the setup story for a player running the game is simply "clone and run". It uses the standard WMO weather interpretation codes, which map cleanly onto the game's condition categories.
 
-How it affects gameplay: Bad weather (rain, thunderstorm, snow — weather ID < 700) increases travel cost by $500 and reduces morale by an extra 10 points. Good weather has no penalty. Temperature is randomized ±10°F from the real value and weather type is partially randomized to add variety between the closely-spaced Silicon Valley locations.
+How it affects gameplay: Bad weather (drizzle, rain, snow, thunderstorm — WMO code ≥ 51) increases travel cost by $500 and reduces morale by an extra 15 points. Clear, cloudy, and foggy conditions (codes 0–48) have no penalty. Temperature is jittered ±10°F from the real value and weather type is partially randomized on top of real API data to add variety between the closely-spaced Silicon Valley locations.
 
 Fallback strategy: Two-layer graceful degradation:
-1. With API key → real weather from OpenWeatherMap, randomized for variety
-2. Without key or API failure → randomized mock weather data
+1. Call Open-Meteo → real weather, randomized for variety
+2. On network failure or non-2xx response → randomized mock weather data
 
 ### Data Modeling
 
 - Records (`Location`, `Event`, `Effects`, `WeatherData`) for immutable data structures, leveraging Java's record feature for concise, readable code.
-- `StartupState` is the only mutable class. All fields are private with controlled mutation through dedicated methods (`rest()`, `buildProduct()`, `travelToNextStop()`, `fixBugs()`, `marketingPush()`, `boostMorale()`). A central `clampAll()` method ensures all resource values stay within valid bounds after every mutation.
+- `StartupState` is the only mutable class. Mutation is funneled through dedicated action methods (`rest()`, `buildProduct()`, `travelToNextStop()`, `fixBugs()`, `marketingPush()`, `coffeeBoost()`, `applyEventEffects()`). Each method applies inline clamping so morale and hype stay within `[0, 100]` and coffee/compute/bugs never go negative. Cash is intentionally left unclamped so negative balances can trigger the bankruptcy game-over condition.
 - `Effects` record bundles six resource changes (cash, morale, compute, coffee, hype, bugs) into a single object, used by both the event system and the display layer. This avoids passing loose integers and makes the code self-documenting.
 - Events contain a description, two choice labels, and two `Effects` objects — one per choice. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today") are applied automatically without player input.
 - Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game.
@@ -201,23 +206,21 @@ Fallback strategy: Two-layer graceful degradation:
 
 - API timeout/failure: Caught in try-catch, falls back to mock weather with a warning message. Game never crashes due to network issues.
 - Invalid user input: `InputHandler` loops with a clear error message until a valid number in range is entered.
-- Missing `.env` file: `dotenv-java` configured with `ignoreIfMissing()` — the game runs without it, falling back to mock weather.
 - Missing save file: `SaveManager.load()` returns null, and `GameRunner` stays on the main menu with a message.
-- Resource boundaries: `clampAll()` prevents morale and hype from exceeding 0–100, and coffee/compute/bugs from going negative. Cash is intentionally not clamped — negative cash triggers the `isBankrupt()` game-over condition.
+- Resource boundaries: inline clamping in each mutation method prevents morale and hype from exceeding 0–100, and coffee/compute/bugs from going negative. Cash is intentionally not clamped — negative cash triggers the `isBankrupt()` game-over condition.
 
 ### Tradeoffs & "If I Had More Time"
 
 - CLI over GUI: Prioritized game logic, clean architecture, and separation of concerns over visual polish. The `DisplayManager` class isolates all print logic, so a GUI layer could replace it without touching game logic.
 - Single save slot: Sufficient for a single-player game. Multi-slot support would only require parameterizing the save filename (e.g., `save_{slot}.json`).
 - Weather randomization: Real weather between nearby Silicon Valley cities is nearly identical. Added randomization on top of real API data as a compromise — the API integration is genuine, while the randomization ensures meaningful gameplay impact.
-- Event pool size: Currently 7 events. With more time, the pool would expand to 20+ events, including conditional events based on resource levels (e.g., a "team mutiny" event when morale is below 30).
+- Event pool size: Currently 5 events. With more time, the pool would expand to 20+ events, including conditional events based on resource levels (e.g., a "team mutiny" event when morale is below 30).
 - If more time: Add a scoring system based on final resources and days taken, implement difficulty levels, create a web-based UI with Spring Boot, add persistent high scores, and integrate a second API (e.g., Hacker News Algolia API for hype-related events tied to real trending topics).
 
 ### Tests
 
 Unit tests cover core game mechanics:
 
-- StartupStateTest**: Resource mutations, boundary conditions (clamp behavior), game-over triggers (bankrupt, burnout, product dead), coffee withdrawal logic, and daily settlement.
-- EventManagerTest: Random event generation, event effect application, null-choice event handling.
-- RouteMapTest: Location retrieval, destination detection, progress calculation.
-- WeatherServiceTest: API response parsing, fallback behavior when API is unavailable, weather randomization.
+- **StartupStateTest**: Resource mutations, boundary conditions (clamp behavior), game-over triggers (bankrupt, burnout), coffee withdrawal logic, and daily settlement.
+- **EventManagerTest**: Random event generation, event effect application, null-choice event handling.
+- **RouteMapTest**: Location retrieval, destination detection, progress calculation, distance between stops.

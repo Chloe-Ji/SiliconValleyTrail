@@ -1,5 +1,5 @@
-import org.example.model.StartupState;
-import org.example.model.Effects;
+package io.github.chloeji.svtrail.model;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

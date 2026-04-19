@@ -1,6 +1,7 @@
-import org.example.core.EventManager;
-import org.example.model.Event;
-import org.example.model.Effects;
+package io.github.chloeji.svtrail.core;
+
+import io.github.chloeji.svtrail.model.Event;
+import io.github.chloeji.svtrail.model.Effects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.Random;
@@ -54,7 +55,7 @@ public class EventManagerTest {
         EventManager em1 = new EventManager(new Random(1));
         EventManager em2 = new EventManager(new Random(999));
 
-        // 多次调用增加概率得到不同事件
+        // Sample many times to raise the probability of observing a divergent event.
         boolean foundDifferent = false;
         for (int i = 0; i < 20; i++) {
             Event event1 = em1.getRandomEvent();
@@ -73,7 +74,7 @@ public class EventManagerTest {
 
     @Test
     void eventWithChoices_hasBothLabels() {
-        // 不断拿事件直到找到一个有选择的
+        // Keep drawing events until we find one that offers branching choices.
         EventManager em = new EventManager(new Random(0));
         boolean foundChoiceEvent = false;
         for (int i = 0; i < 50; i++) {

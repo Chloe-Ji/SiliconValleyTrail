@@ -1,5 +1,6 @@
-import org.example.core.RouteMap;
-import org.example.model.Location;
+package io.github.chloeji.svtrail.core;
+
+import io.github.chloeji.svtrail.model.Location;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
