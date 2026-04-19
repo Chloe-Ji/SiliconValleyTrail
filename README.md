@@ -27,17 +27,28 @@ The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time 
 When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distance and traffic-aware duration between the two cities. Heavy traffic (>1.5× free-flow duration) triggers a morale dip; long legs (>6 miles) add a small fuel surcharge. Without a token the game prints a one-line hint at startup and skips these features.
 
 **Setting up Mapbox (optional):**
-```bash
-cp .env.example .env         # local copy; .env is git-ignored
-# edit .env and set MAPBOX_TOKEN=pk.your-token-here
-mvn exec:java
-```
-The game resolves the token from the `MAPBOX_TOKEN` environment variable first, and falls back to reading a `MAPBOX_TOKEN=` line from `.env` at the project root. You can also skip the file entirely:
-```bash
-MAPBOX_TOKEN=pk.xxx mvn exec:java     # inline, no file needed
-export MAPBOX_TOKEN=pk.xxx            # persistent for the current shell
-```
-Sign up for a free Mapbox token (no credit card) at https://account.mapbox.com/access-tokens/.
+
+Sign up for a free Mapbox token (no credit card) at https://account.mapbox.com/access-tokens/, then pick one of these three ways to make it available to the game:
+
+1. **Create a `.env` file at the project root** (recommended — persistent and simple):
+   ```bash
+   echo 'MAPBOX_TOKEN=pk.your-token-here' > .env
+   mvn exec:java
+   ```
+   `.env` is listed in `.gitignore`, so your token never gets committed.
+
+2. **Export for the current shell session:**
+   ```bash
+   export MAPBOX_TOKEN=pk.your-token-here
+   mvn exec:java
+   ```
+
+3. **One-shot inline (no file, no export):**
+   ```bash
+   MAPBOX_TOKEN=pk.your-token-here mvn exec:java
+   ```
+
+The code resolves the token in two steps: first `System.getenv("MAPBOX_TOKEN")`, then a `MAPBOX_TOKEN=` line in `.env` at the project root. If neither is set, the game prints a one-line warning at startup and plays normally without the Mapbox features.
 
 ### Run Tests
 
@@ -256,7 +267,7 @@ Why this API: The spec asked for at least one external API and suggested Mapping
 
 How it affects gameplay: On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` for current conditions, `driving` for the free-flow baseline). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit. If distance > 6 miles the leg is a "long leg" and a $100 fuel surcharge is deducted. Both effects stack with the base travel cost and the weather penalty.
 
-Token handling: `MappingService.resolveToken()` checks two sources in order — the `MAPBOX_TOKEN` environment variable (standard for CI and shells) and then a `MAPBOX_TOKEN=` entry inside a `.env` file at the project root (the convention most Node/Python/Ruby devs expect). `.env.example` documents the variable, is committed as an empty placeholder, and is the only Mapbox config checked into git; the real `.env` is in `.gitignore`. When both sources are missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line hint at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
+Token handling: `MappingService.resolveToken()` checks two sources in order — the `MAPBOX_TOKEN` environment variable (standard for CI and shells) and then a `MAPBOX_TOKEN=` entry inside a `.env` file at the project root (the convention most Node/Python/Ruby devs expect). `.env` is in `.gitignore`, so the token never lands in source control. When both sources are missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line red warning at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
 
 ### Data Modeling
 
