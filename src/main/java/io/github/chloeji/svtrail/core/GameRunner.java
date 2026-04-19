@@ -127,6 +127,13 @@ public class GameRunner {
                     return;
                 }
             }
+            // Silent backstop so a Ctrl+C, terminal close, or power loss
+            // never costs a turn. Skipped on a losing turn so Load Game
+            // doesn't instantly replay Game Over — the previous turn's
+            // auto-save remains on disk for a retry.
+            if (!state.isGameOver()) {
+                saveManager.saveQuietly(state);
+            }
         }
         display.printGameOver(state);
     }

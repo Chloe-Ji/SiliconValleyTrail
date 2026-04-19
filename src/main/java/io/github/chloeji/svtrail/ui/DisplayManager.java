@@ -40,6 +40,7 @@ public class DisplayManager {
         System.out.println("  ☕ Coffee - Essential fuel (2 days without = Morale drops dramatically)");
         System.out.println("  📢 Hype - Public interest in your startup");
         System.out.println("  💻 Compute Credits - Cloud credits for building product");
+        System.out.println("\n💾 Your progress auto-saves at the end of every day.");
         System.out.println("\nGood luck, founder!");
         System.out.println("============================================================");
     }

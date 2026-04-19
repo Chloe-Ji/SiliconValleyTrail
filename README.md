@@ -234,7 +234,7 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - `Effects` record bundles six resource changes (cash, morale, compute, coffee, hype, bugs) into a single object, used by both the event system and the display layer. This avoids passing loose integers and makes the code self-documenting.
 - Events contain a description, two choice labels, two `Effects` objects — one per choice — and an optional `Predicate<WeatherData>` condition. Unconditional events have `null` for the predicate. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today", "Press Feature in TechCrunch") are applied automatically without player input. The pool currently contains **12 events**: 9 unconditional (8 with choices, 1 quiet day) plus 3 weather-conditional.
 - `RouteInfo` captures the single leg result from `MappingService` (miles, traffic-aware minutes, free-flow minutes, heavy-traffic flag). It is never persisted — consumed and discarded inside `GameRunner.travel`.
-- Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game.
+- Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. The game also **auto-saves at the end of every turn** via `SaveManager.saveQuietly(state)` so Ctrl+C, a terminal close, or a crash never loses progress. Auto-save is skipped on a losing turn so the on-disk save lets the player retry the fatal day rather than instantly replaying Game Over.
 
 ### Error Handling
 
