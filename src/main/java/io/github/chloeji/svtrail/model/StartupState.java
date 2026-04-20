@@ -5,47 +5,37 @@ package io.github.chloeji.svtrail.model;
  * <p>
  * This class is the only mutable domain object in the game. Player actions,
  * daily settlement, and random events all funnel through its mutation methods
- * so that resource invariants (e.g. morale and hype bounded to [0, 100],
- * non-negative coffee / compute / bugs) can be enforced in one place.
+ * so that resource invariants (e.g. morale bounded to [0, 100], non-negative
+ * coffee and compute) can be enforced in one place.
  */
 public class StartupState {
     private static final int INITIAL_CASH = 20000;
     private static final int DAILY_COFFEE_DRAIN = 3;
     private static final int EXTRA_COFFEE_COST = 5;
-    private static final int INITIAL_HYPE = 50;
     private static final int INITIAL_MORALE = 70;
     private static final int INITIAL_COFFEE = 50;
     private static final int INITIAL_COMPUTE = 100;
     private static final int DAILY_EXPENSE = 1000;
     private static final int FLAT_TRAVEL_COST = 200;
-    private static final int INITIAL_BUGS = 0;
 
     private static final int MAX_MORALE = 100;
-    private static final int MAX_HYPE = 100;
     private static final int REST_MORALE_GAIN = 30;
     private static final int BOOST_MORALE_GAIN = 15;
     private static final int BUILD_COMPUTE_COST = 10;
-    private static final int BUILD_HYPE_GAIN = 20;
-    private static final int BUILD_BUGS_ADDED = 5;
-    private static final int BUILD_FAIL_MORALE_DROP = 15;
-    private static final int FIX_BUGS_STEP = 5;
-    private static final int FIX_BUGS_MORALE_DROP = 10;
+    private static final int BUILD_CASH_GAIN = 1500;
+    private static final int BUILD_FAIL_MORALE_DROP = 10;
     private static final int BAD_WEATHER_EXTRA_COST = 500;
     private static final int BAD_WEATHER_MORALE_DROP = 15;
     private static final int TRAVEL_MORALE_DROP = 5;
-    private static final int MARKETING_COST = 1500;
-    private static final int MARKETING_HYPE_GAIN = 15;
     private static final int COFFEE_WITHDRAWAL_CRITICAL_DAYS = 2;
     private static final int COFFEE_WITHDRAWAL_CRITICAL_MORALE = -30;
     private static final int COFFEE_WITHDRAWAL_WARNING_MORALE_DROP = 10;
 
     // Resource stats tracking
     int cash;
-    int hype;
     int morale;
     int coffee;
     int computeCredits;
-    int bugs;
 
     // Survival and progress tracking
     int daysWithoutCoffee;
@@ -59,11 +49,9 @@ public class StartupState {
      */
     public StartupState() {
         cash = INITIAL_CASH;
-        hype = INITIAL_HYPE;
         morale = INITIAL_MORALE;
         coffee = INITIAL_COFFEE;
         computeCredits = INITIAL_COMPUTE;
-        bugs = INITIAL_BUGS;
         daysWithoutCoffee = 0;
         currentIndex = 0;
         currentDay = 1;
@@ -85,12 +73,6 @@ public class StartupState {
 
     /** @return current cloud compute credits remaining */
     public int getComputeCredits() { return computeCredits; }
-
-    /** @return current public hype level in [0, 100] */
-    public int getHype() { return hype; }
-
-    /** @return current accumulated bug count */
-    public int getBugs() { return bugs; }
 
     /** @return index of the current location on the route */
     public int getCurrentIndex() { return currentIndex; }
@@ -119,12 +101,6 @@ public class StartupState {
 
     /** Sets the current compute credits. Primarily used by tests and save/load. */
     public void setComputeCredits(int credits) { this.computeCredits = credits; }
-
-    /** Sets the current hype level. Primarily used by tests and save/load. */
-    public void setHype(int hype) { this.hype = hype; }
-
-    /** Sets the current bug count. Primarily used by tests and save/load. */
-    public void setBugs(int bugs) { this.bugs = bugs; }
 
     // ==========================================
     // State Queries (Read-Only)
@@ -219,32 +195,18 @@ public class StartupState {
 
     /**
      * Spends a day building the product. With compute credits available the
-     * team ships an update that raises hype; without compute the local build
-     * fails and morale suffers. Either outcome adds new bugs.
+     * team ships a feature and earns revenue; without compute the local build
+     * fails and morale suffers.
      */
     public void buildProduct() {
         if (computeCredits > 0) {
             computeCredits -= BUILD_COMPUTE_COST;
-            hype += BUILD_HYPE_GAIN;
-            System.out.println("🚀 Product updated! Hype increased to " + hype);
+            cash += BUILD_CASH_GAIN;
+            System.out.println("🚀 Product shipped! Earned $" + BUILD_CASH_GAIN + " in revenue.");
         } else {
             morale -= BUILD_FAIL_MORALE_DROP;
             System.out.println("⚠️ Compute exhausted! Local build crashed the system. Morale dropped!");
         }
-        bugs += BUILD_BUGS_ADDED;
-        endDayAndSettle();
-    }
-
-    /**
-     * Spends a day triaging and fixing bugs. Morale drops slightly from the
-     * grind; bug count is floored at zero.
-     */
-    public void fixBugs() {
-        if (bugs > 0) {
-            bugs -= FIX_BUGS_STEP;
-            morale -= FIX_BUGS_MORALE_DROP;
-        }
-        bugs = Math.max(0, bugs);
         endDayAndSettle();
     }
 
@@ -266,16 +228,6 @@ public class StartupState {
         currentIndex++;
     }
 
-    /**
-     * Runs a marketing campaign, spending cash to raise hype (capped at 100).
-     */
-    public void marketingPush() {
-        cash -= MARKETING_COST;
-        hype += MARKETING_HYPE_GAIN;
-        hype = Math.min(MAX_HYPE, hype);
-        endDayAndSettle();
-    }
-
     // ==========================================
     // State Mutations (Random Events, Weather)
     // ==========================================
@@ -291,15 +243,11 @@ public class StartupState {
         morale += effects.morale();
         computeCredits += effects.compute();
         coffee += effects.coffee();
-        hype += effects.hype();
-        bugs += effects.bugs();
 
         // Clamp back to valid ranges. Cash is intentionally left unclamped so
         // a negative balance can trigger the bankruptcy game-over condition.
         morale = Math.min(MAX_MORALE, morale);
         computeCredits = Math.max(0, computeCredits);
         coffee = Math.max(0, coffee);
-        hype = Math.min(MAX_HYPE, Math.max(0, hype));
-        bugs = Math.max(0, bugs);
     }
 }

@@ -22,7 +22,6 @@ import io.github.chloeji.svtrail.util.SaveManager;
  * location after movement" rule.
  */
 public class GameRunner {
-    private static final int MARKETING_MIN_CASH = 1500;
     private static final int HEAVY_TRAFFIC_MORALE_DROP = 5;
 
     // ANSI color escapes for the startup warning. Modern terminals (iTerm,
@@ -128,16 +127,14 @@ public class GameRunner {
                 display.printDayStatus(state, current, weather, progress);
                 display.printActionMenu();
 
-                int choice = inputHandler.getUserChoice(1, 8);
+                int choice = inputHandler.getUserChoice(1, 6);
                 switch (choice) {
                     case 1 -> travel(weather);
                     case 2 -> rest();
                     case 3 -> workOnProduct();
-                    case 4 -> fixBugs();
-                    case 5 -> marketingPush();
-                    case 6 -> boostEnergy();
-                    case 7 -> saveManager.save(state);
-                    case 8 -> {
+                    case 4 -> boostEnergy();
+                    case 5 -> saveManager.save(state);
+                    case 6 -> {
                         return;
                     }
                 }
@@ -177,7 +174,7 @@ public class GameRunner {
             System.out.println("🚦 Heavy traffic on the route — "
                     + info.trafficMinutes() + " min vs usual "
                     + info.freeFlowMinutes() + " min. Team stuck in the car.");
-            state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0, 0, 0));
+            state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0));
         }
     }
 
@@ -190,32 +187,7 @@ public class GameRunner {
 
     private void workOnProduct() {
         System.out.println("\n💻 Your team focuses on the product...");
-        System.out.println("\n✅ Productive day, but team is tired.");
         state.buildProduct();
-        inputHandler.waitForEnter();
-    }
-
-    private void fixBugs() {
-        if (state.getBugs() <= 0) {
-            System.out.println("\n✅ No bugs to fix! Codebase is clean.");
-            return;
-        }
-        state.fixBugs();
-        System.out.println("\n🔧 Team spent the day squashing bugs. Tiring but necessary.");
-        inputHandler.waitForEnter();
-    }
-
-    private void marketingPush() {
-        System.out.println("\n📢 You launch a marketing campaign...");
-
-        // Bail out without consuming a day if the player cannot afford the
-        // campaign — this lets them reselect a different action.
-        if (state.getCash() < MARKETING_MIN_CASH) {
-            System.out.println("\n❌ Not enough cash for marketing! Need $" + MARKETING_MIN_CASH);
-            return;
-        }
-        state.marketingPush();
-        System.out.println("\n📢 Campaign launched! Hype increased. (Cost: $" + MARKETING_MIN_CASH + ")");
         inputHandler.waitForEnter();
     }
 

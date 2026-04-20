@@ -121,8 +121,6 @@ public class EventManagerTest {
                 assertEquals(0, effects.morale());
                 assertEquals(0, effects.compute());
                 assertEquals(0, effects.coffee());
-                assertEquals(0, effects.hype());
-                assertEquals(0, effects.bugs());
                 return;
             }
         }

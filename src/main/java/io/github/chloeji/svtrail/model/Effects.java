@@ -9,7 +9,5 @@ package io.github.chloeji.svtrail.model;
  * @param morale   change in team morale
  * @param compute  change in compute credits
  * @param coffee   change in coffee stock
- * @param hype     change in hype level
- * @param bugs     change in outstanding bug count
  */
-public record Effects(int cash, int morale, int compute, int coffee, int hype, int bugs) {}
+public record Effects(int cash, int morale, int compute, int coffee) {}

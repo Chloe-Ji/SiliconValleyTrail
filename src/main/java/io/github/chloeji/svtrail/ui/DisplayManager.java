@@ -48,8 +48,7 @@ public class DisplayManager {
         System.out.println("  💰 Cash - Don't run out!");
         System.out.println("  😊 Morale - Keep your team happy");
         System.out.println("  ☕ Coffee - Essential fuel (2 days without = Morale drops dramatically)");
-        System.out.println("  📢 Hype - Public interest in your startup");
-        System.out.println("  💻 Compute Credits - Cloud credits for building product");
+        System.out.println("  💻 Compute Credits - Ship product for revenue; running out makes builds drop morale");
         System.out.println("\nGood luck, founder!");
         System.out.println("============================================================");
     }
@@ -69,11 +68,9 @@ public class DisplayManager {
         System.out.println("Day " + state.getCurrentDay() + " | " + location.name());
         System.out.println("============================================================");
         System.out.println("💰 Cash: $" + state.getCash()
-                + " | 😊 Morale: " + state.getMorale() + "/100"
-                + " | ☕ Coffee: " + state.getCoffee());
-        System.out.println("📢 Hype: " + state.getHype() + "/100"
-                + " | 💻 Compute: " + state.getComputeCredits()
-                + " | 🐛 Bugs: " + state.getBugs());
+                + " | 😊 Morale: " + state.getMorale() + "/100");
+        System.out.println("☕ Coffee: " + state.getCoffee()
+                + " | 💻 Compute: " + state.getComputeCredits());
 
         System.out.println("📍 Progress: " + progress + "% to San Francisco");
         System.out.println("============================================================");
@@ -86,32 +83,28 @@ public class DisplayManager {
     /**
      * Prints the per-day action menu with cost/effect summaries.
      * <p>
-     * Options 1–5 advance the day and carry a fixed daily tax (−$1,000 cash,
+     * Options 1–3 advance the day and carry a fixed daily tax (−$1,000 cash,
      * −3 coffee) that's stated once at the top rather than duplicated on every
-     * line. Options 6–8 are "free" — they don't advance the day — and are
+     * line. Options 4–6 are "free" — they don't advance the day — and are
      * rendered in a separate block so the distinction is visually obvious.
      */
     public void printActionMenu() {
         System.out.println("\n------------------------------------------------------------");
         System.out.println("What will you do?");
-        System.out.println(hint("Options 1–5 advance the day: -$1,000 cash, -3 ☕"));
+        System.out.println(hint("Options 1–3 advance the day: -$1,000 cash, -3 ☕"));
         System.out.println("------------------------------------------------------------");
         System.out.println("1. Travel to next location");
         System.out.println(hint("   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)"));
         System.out.println("2. Rest and recover");
         System.out.println(hint("   -> morale boost 30"));
         System.out.println("3. Work on product");
-        System.out.println(hint("   -> uses 10 compute credits | hype increases 20 (no compute credits: morale drops 15) | 🐛 bugs increase"));
-        System.out.println("4. Fix bugs");
-        System.out.println(hint("   -> 🐛 bugs decrease 5 | 😊 morale drops 10"));
-        System.out.println("5. Marketing push (costs $1500)");
-        System.out.println(hint("   -> spend 1500 | hype increases 15"));
+        System.out.println(hint("   -> uses 10 compute credits | earn $1500 revenue (no compute credits: morale drops 10)"));
         System.out.println(hint("------------------------------------------------------------"));
         System.out.println(hint("Free actions (no day advance):"));
-        System.out.println("6. Coffee boost (once per day)");
+        System.out.println("4. Coffee boost (once per day)");
         System.out.println(hint("   -> uses 5 coffee | morale boost 15"));
-        System.out.println("7. Save game");
-        System.out.println("8. Quit to menu");
+        System.out.println("5. Save game");
+        System.out.println("6. Quit to menu");
     }
 
     /**
@@ -146,7 +139,7 @@ public class DisplayManager {
         System.out.println("============================================================");
         System.out.println("Your startup made it to San Francisco!");
         System.out.println("💰 Final Cash: $" + state.getCash());
-        System.out.println("📢 Final Hype: " + state.getHype() + "/100");
+        System.out.println("😊 Final Morale: " + state.getMorale() + "/100");
         System.out.println("You're ready for your Series A pitch!");
         System.out.println("============================================================");
     }

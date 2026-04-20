@@ -22,8 +22,6 @@ public class StartupStateTest {
         assertEquals(70, state.getMorale());
         assertEquals(50, state.getCoffee());
         assertEquals(100, state.getComputeCredits());
-        assertEquals(50, state.getHype());
-        assertEquals(0, state.getBugs());
         assertEquals(1, state.getCurrentDay());
         assertEquals(0, state.getCurrentIndex());
     }
@@ -97,12 +95,11 @@ public class StartupStateTest {
     // ==========================================
 
     @Test
-    void buildProduct_withCompute_increasesHypeAndBugs() {
-        int initialHype = state.getHype();
-        int initialBugs = state.getBugs();
+    void buildProduct_withCompute_earnsCash() {
+        int initialCash = state.getCash();
         state.buildProduct();
-        assertEquals(initialHype + 20, state.getHype());
-        assertEquals(initialBugs + 5, state.getBugs());
+        // +1500 revenue, -1000 daily expense → net +500
+        assertEquals(initialCash + 500, state.getCash());
     }
 
     @Test
@@ -120,45 +117,12 @@ public class StartupStateTest {
     }
 
     @Test
-    void buildProduct_withoutCompute_stillAddsBugs() {
+    void buildProduct_withoutCompute_doesNotChangeCash() {
         state.setComputeCredits(0);
+        int initialCash = state.getCash();
         state.buildProduct();
-        assertEquals(5, state.getBugs());
-    }
-
-    // ==========================================
-    // Fix Bugs
-    // ==========================================
-
-    @Test
-    void fixBugs_reducesBugs() {
-        state.setBugs(10);
-        state.fixBugs();
-        assertEquals(5, state.getBugs());
-    }
-
-    @Test
-    void fixBugs_doesNotGoBelowZero() {
-        state.setBugs(2);
-        state.fixBugs();
-        assertEquals(0, state.getBugs());
-    }
-
-    @Test
-    void fixBugs_noBugs_noMoraleDrop() {
-        state.setBugs(0);
-        int moraleBefore = state.getMorale();
-        state.fixBugs();
-        // bugs == 0, so no morale -= 10, only endDayAndSettle runs
-        assertEquals(moraleBefore, state.getMorale());
-    }
-
-    @Test
-    void fixBugs_withBugs_reducesMorale() {
-        state.setBugs(10);
-        state.setMorale(50);
-        state.fixBugs();
-        assertTrue(state.getMorale() < 50);
+        // Only the daily -1000 applies; no revenue
+        assertEquals(initialCash - 1000, state.getCash());
     }
 
     // ==========================================
@@ -199,30 +163,6 @@ public class StartupStateTest {
     void travel_advancesDay() {
         state.travelToNextStop(false);
         assertEquals(2, state.getCurrentDay());
-    }
-
-    // ==========================================
-    // Marketing Push
-    // ==========================================
-
-    @Test
-    void marketingPush_costsCash() {
-        state.marketingPush();
-        assertEquals(20000 - 1500 - 1000, state.getCash());
-    }
-
-    @Test
-    void marketingPush_increasesHype() {
-        int initialHype = state.getHype();
-        state.marketingPush();
-        assertEquals(initialHype + 15, state.getHype());
-    }
-
-    @Test
-    void marketingPush_hypeCapsAt100() {
-        state.setHype(95);
-        state.marketingPush();
-        assertEquals(100, state.getHype());
     }
 
     // ==========================================
@@ -301,59 +241,38 @@ public class StartupStateTest {
 
     @Test
     void applyEventEffects_appliesAllChanges() {
-        Effects effects = new Effects(1000, 10, 5, 3, 5, 2);
+        Effects effects = new Effects(1000, 10, 5, 3);
         state.applyEventEffects(effects);
         assertEquals(21000, state.getCash());
-        assertEquals(55, state.getHype());
+        assertEquals(80, state.getMorale());
+        assertEquals(105, state.getComputeCredits());
         assertEquals(53, state.getCoffee());
-        assertEquals(2, state.getBugs());
     }
 
     @Test
     void applyEventEffects_clampsMoraleTo100() {
-        Effects effects = new Effects(0, 50, 0, 0, 0, 0);
+        Effects effects = new Effects(0, 50, 0, 0);
         state.applyEventEffects(effects);
         assertEquals(100, state.getMorale());
     }
 
     @Test
-    void applyEventEffects_clampsHypeTo100() {
-        Effects effects = new Effects(0, 0, 0, 0, 200, 0);
-        state.applyEventEffects(effects);
-        assertEquals(100, state.getHype());
-    }
-
-    @Test
-    void applyEventEffects_clampsHypeToZero() {
-        Effects effects = new Effects(0, 0, 0, 0, -200, 0);
-        state.applyEventEffects(effects);
-        assertEquals(0, state.getHype());
-    }
-
-    @Test
     void applyEventEffects_clampsComputeToZero() {
-        Effects effects = new Effects(0, 0, -500, 0, 0, 0);
+        Effects effects = new Effects(0, 0, -500, 0);
         state.applyEventEffects(effects);
         assertEquals(0, state.getComputeCredits());
     }
 
     @Test
     void applyEventEffects_clampsCoffeeToZero() {
-        Effects effects = new Effects(0, 0, 0, -500, 0, 0);
+        Effects effects = new Effects(0, 0, 0, -500);
         state.applyEventEffects(effects);
         assertEquals(0, state.getCoffee());
     }
 
     @Test
-    void applyEventEffects_clampsBugsToZero() {
-        Effects effects = new Effects(0, 0, 0, 0, 0, -500);
-        state.applyEventEffects(effects);
-        assertEquals(0, state.getBugs());
-    }
-
-    @Test
     void applyEventEffects_cashCanGoNegative() {
-        Effects effects = new Effects(-100000, 0, 0, 0, 0, 0);
+        Effects effects = new Effects(-100000, 0, 0, 0);
         state.applyEventEffects(effects);
         assertTrue(state.getCash() < 0);
         assertTrue(state.isBankrupt());
