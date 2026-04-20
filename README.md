@@ -45,7 +45,7 @@ mvn clean compile exec:java
 The game integrates two public APIs that change gameplay. Both degrade gracefully — the game runs fully offline or without any tokens.
 
 **1. Open-Meteo (weather) — no key required**
-The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather. Bad weather (rain, drizzle, snow, thunderstorm) adds $500 to travel cost and drops morale. Certain events (Power Outage, Server Overheating, Foggy 101 Accident) are gated on live weather conditions and only fire when the weather matches. On network failure the game falls back to randomized mock weather.
+The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather. Bad weather (rain, drizzle, snow, thunderstorm) adds $500 to travel cost and drops morale. Certain events (Power Outage, Foggy 101 Accident) are gated on live weather conditions and only fire when the weather matches. On network failure the game falls back to randomized mock weather.
 
 **2. Mapbox Directions (traffic & distance) — optional, requires free token**
 When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distance and traffic-aware duration between the two cities. Heavy traffic (>1.5× free-flow duration) triggers a morale dip; long legs (>6 miles) add a small fuel surcharge. Without a token the game prints a one-line hint at startup and skips these features.
@@ -184,8 +184,8 @@ Press Enter to begin your journey...
 ============================================================
 Day 1 | San Jose
 ============================================================
-💰 Cash: $50,000 | 😊 Morale: 100/100 | ☕ Coffee: 100
-📢 Hype: 10/100 | 💻 Compute: 100 | 🐛 Bugs: 0
+💰 Cash: $20,000 | 😊 Morale: 70/100 | ☕ Coffee: 50
+📢 Hype: 50/100 | 💻 Compute: 100 | 🐛 Bugs: 0
 📍 Progress: 0% to San Francisco
 ============================================================
 🌤️  Weather: Sunny, 72°F
@@ -282,7 +282,7 @@ Why this API: Weather is a natural gameplay modifier — it affects travel cost 
 
 How it affects gameplay: Bad weather (drizzle, rain, snow, thunderstorm — WMO code ≥ 51) increases travel cost by $500 and reduces morale by an extra 15 points. Clear, cloudy, and foggy conditions (codes 0–48) have no penalty. Temperature is jittered ±10°F from the real value and weather type is partially randomized on top of real API data to add variety between the closely-spaced Silicon Valley locations.
 
-The weather also gates **three conditional events** in the event pool: `Power Outage` only fires during thunderstorms, `Server Overheating` only when the temperature exceeds 80°F, and `Foggy 101 Accident` only when the condition is foggy. `Event.condition` is a nullable `Predicate<WeatherData>` — unconditional events have `null` and are always eligible.
+The weather also gates **two conditional events** in the event pool: `Power Outage` only fires during thunderstorms, and `Foggy 101 Accident` only when the condition is foggy. `Event.condition` is a nullable `Predicate<WeatherData>` — unconditional events have `null` and are always eligible.
 
 Fallback strategy: Two-layer graceful degradation:
 1. Call Open-Meteo → real weather, randomized for variety
@@ -301,7 +301,7 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - Records (`Location`, `Event`, `Effects`, `WeatherData`, `RouteInfo`) for immutable data structures, leveraging Java's record feature for concise, readable code.
 - `StartupState` is the only mutable class. Mutation is funneled through dedicated action methods (`rest()`, `buildProduct()`, `travelToNextStop()`, `fixBugs()`, `marketingPush()`, `coffeeBoost()`, `applyEventEffects()`). Each method applies inline clamping so morale and hype stay within `[0, 100]` and coffee/compute/bugs never go negative. Cash is intentionally left unclamped so negative balances can trigger the bankruptcy game-over condition.
 - `Effects` record bundles six resource changes (cash, morale, compute, coffee, hype, bugs) into a single object, used by both the event system and the display layer. This avoids passing loose integers and makes the code self-documenting.
-- Events contain a description, two choice labels, two `Effects` objects — one per choice — and an optional `Predicate<WeatherData>` condition. Unconditional events have `null` for the predicate. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today", "Press Feature in TechCrunch") are applied automatically without player input. The pool currently contains **12 events**: 9 unconditional (8 with choices, 1 quiet day) plus 3 weather-conditional.
+- Events contain a description, two choice labels, two `Effects` objects — one per choice — and an optional `Predicate<WeatherData>` condition. Unconditional events have `null` for the predicate. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today") are applied automatically without player input. The pool currently contains **7 events**: 5 unconditional (4 with choices, 1 quiet day) plus 2 weather-conditional.
 - `RouteInfo` captures the single leg result from `MappingService` (miles, traffic-aware minutes, free-flow minutes, heavy-traffic flag). It is never persisted — consumed and discarded inside `GameRunner.travel`.
 - Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. Saves happen only on the explicit menu option 7 (matches the spec's sample flow); there is no auto-save.
 
@@ -320,7 +320,7 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - CLI over GUI: Prioritized game logic, clean architecture, and separation of concerns over visual polish. The `DisplayManager` class isolates all print logic, so a GUI layer could replace it without touching game logic.
 - Single save slot: Sufficient for a single-player game. Multi-slot support would only require parameterizing the save filename (e.g., `save_{slot}.json`).
 - Weather randomization: Real weather between nearby Silicon Valley cities is nearly identical. Added randomization on top of real API data as a compromise — the API integration is genuine, while the randomization ensures meaningful gameplay impact.
-- Event pool size: Currently 12 events (9 unconditional + 3 weather-conditional). With more time, the pool would expand to 20+ including events conditional on resource levels (e.g., a "team mutiny" event when morale is below 30) and time-of-journey (e.g., "pre-pitch jitters" on the last leg).
+- Event pool size: Currently 7 events (5 unconditional + 2 weather-conditional). With more time, the pool would expand to 20+ including events conditional on resource levels (e.g., a "team mutiny" event when morale is below 30) and time-of-journey (e.g., "pre-pitch jitters" on the last leg).
 - Deployment beyond Codespaces: Codespaces is the current browser-playable path. With more time, two richer deployment models are natural next steps:
   - **Browser-native terminal** — wrap `GameRunner` in a Spring Boot or Javalin server with an `xterm.js` front-end over WebSockets. Keystrokes pipe into `InputHandler`; stdout streams back to the browser. Session state stays in-memory per connection. Deploy to Fly.io, Render, or Railway. Preserves the CLI feel without requiring any install or Codespaces. Roughly 2–3 days of work.
   - **Full web service** — stateless workers fronted by a load balancer; `StartupState` lives in Postgres (durable) + Redis (active session, API response cache). Game logic exposed as REST endpoints (`POST /games/{id}/actions`). Horizontal scale, multi-region deployment, SLO-driven alerting. This is the architecture to reach for at ~1M DAU, where Open-Meteo and Mapbox rate limits become the primary bottleneck and caching external APIs (keyed by `(city, hour)` with a 1-hour TTL) is the single highest-leverage fix.
@@ -328,10 +328,10 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 
 ### Tests
 
-Unit tests cover core game mechanics — 91 tests total across four classes:
+Unit tests cover core game mechanics — 89 tests total across four classes:
 
 - **StartupStateTest**: Resource mutations, boundary conditions (clamp behavior), game-over triggers (bankrupt, burnout), coffee withdrawal logic, and daily settlement. (42 tests)
-- **EventManagerTest**: Random event generation, effect application, null-choice event handling, and weather-conditional filtering (verifies hot-weather events can't fire in clear skies and vice versa). (16 tests)
+- **EventManagerTest**: Random event generation, effect application, null-choice event handling, and weather-conditional filtering (verifies thunderstorm and foggy events fire only under matching conditions and never in clear skies). (14 tests)
 - **RouteMapTest**: Location retrieval, destination detection, progress calculation, distance between stops. (12 tests)
 - **MappingServiceTest**: Token configuration detection, short-circuit when unconfigured, JSON parsing, heavy-traffic flagging (ratio > 1.5), graceful degradation on network failure, non-2xx status, malformed JSON, and empty routes, plus the two-tier token resolution (env var → `.env` file) — comments, quoted values, missing key, and missing file. Uses an in-test `HttpClient` stub and JUnit's `@TempDir` so the tests run offline and don't touch the real `.env`. (21 tests)
 
