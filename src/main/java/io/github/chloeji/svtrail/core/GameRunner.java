@@ -23,8 +23,6 @@ import io.github.chloeji.svtrail.util.SaveManager;
  */
 public class GameRunner {
     private static final int MARKETING_MIN_CASH = 1500;
-    private static final int LONG_LEG_MILES = 6;
-    private static final int LONG_LEG_SURCHARGE = 100;
     private static final int HEAVY_TRAFFIC_MORALE_DROP = 5;
 
     // ANSI color escapes for the startup warning. Modern terminals (iTerm,
@@ -155,25 +153,21 @@ public class GameRunner {
     }
 
     /**
-     * Queries Mapbox for the current leg and, when traffic or distance is
-     * notable, applies a corresponding gameplay effect before the base
-     * travel cost is charged. Silently no-ops when Mapbox is unavailable.
+     * Queries Mapbox for the current leg and, when traffic is heavy,
+     * applies a morale drop before the base travel cost is charged.
+     * Silently no-ops when Mapbox is unavailable.
      */
     private void applyMapboxEffects(Location origin, Location next) {
         if (next == null) return;
         RouteInfo info = mappingService.getRouteInfo(origin, next);
         if (info == null) return;
 
-        System.out.println();
         if (info.heavyTraffic()) {
+            System.out.println();
             System.out.println("🚦 Heavy traffic on the route — "
                     + info.trafficMinutes() + " min vs usual "
                     + info.freeFlowMinutes() + " min. Team stuck in the car.");
             state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0, 0, 0));
-        }
-        if (info.miles() > LONG_LEG_MILES) {
-            System.out.println("📏 Long leg today (" + Math.round(info.miles()) + " mi) — extra fuel cost.");
-            state.applyEventEffects(new Effects(-LONG_LEG_SURCHARGE, 0, 0, 0, 0, 0));
         }
     }
 

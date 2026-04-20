@@ -68,26 +68,24 @@ public class MappingServiceTest {
     // ==========================================
 
     @Test
-    void getRouteInfo_parsesDistanceAndDuration() {
-        String body = "{\"routes\":[{\"distance\":8046.72,\"duration\":600}]}";
+    void getRouteInfo_parsesDuration() {
+        String body = "{\"routes\":[{\"duration\":600}]}";
         MappingService service = new MappingService(new StubHttpClient(body, 200), "pk.test");
 
         RouteInfo info = service.getRouteInfo(SAN_JOSE, SANTA_CLARA);
 
         assertNotNull(info);
-        assertEquals(5.0, info.miles(), 0.1);
         assertEquals(10, info.trafficMinutes());
     }
 
     @Test
     void getRouteInfo_flagsHeavyTrafficWhenRatioExceedsThreshold() {
-        // Both HTTP calls return the same body in the stub, so both durations
-        // come from the same JSON. We vary the response per call via a
-        // sequence stub for this test.
-        String trafficBody = "{\"routes\":[{\"distance\":8046.72,\"duration\":1200}]}"; // 20 min
-        String freeFlowBody = "{\"routes\":[{\"distance\":8046.72,\"duration\":600}]}";  // 10 min
+        // Two HTTP calls, one per profile: driving-traffic (current) and
+        // driving (baseline). SequenceHttpClient returns the bodies in order.
+        String trafficBody = "{\"routes\":[{\"duration\":1200}]}"; // 20 min
+        String freeFlowBody = "{\"routes\":[{\"duration\":600}]}";  // 10 min
         MappingService service = new MappingService(
-                new SequenceHttpClient(trafficBody, freeFlowBody, trafficBody), "pk.test");
+                new SequenceHttpClient(trafficBody, freeFlowBody), "pk.test");
 
         RouteInfo info = service.getRouteInfo(SAN_JOSE, SANTA_CLARA);
 
@@ -98,7 +96,7 @@ public class MappingServiceTest {
 
     @Test
     void getRouteInfo_doesNotFlagLightTraffic() {
-        String body = "{\"routes\":[{\"distance\":8046.72,\"duration\":600}]}";
+        String body = "{\"routes\":[{\"duration\":600}]}";
         MappingService service = new MappingService(new StubHttpClient(body, 200), "pk.test");
 
         RouteInfo info = service.getRouteInfo(SAN_JOSE, SANTA_CLARA);

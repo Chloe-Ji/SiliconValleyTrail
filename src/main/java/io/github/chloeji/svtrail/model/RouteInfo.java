@@ -7,9 +7,8 @@ package io.github.chloeji.svtrail.model;
  * {@code heavyTraffic} is derived from the ratio of traffic-aware duration
  * to free-flow duration and drives the "stuck in traffic" gameplay event.
  *
- * @param miles            real driving distance in miles
  * @param trafficMinutes   current traffic-aware driving duration in minutes
  * @param freeFlowMinutes  baseline driving duration without traffic in minutes
  * @param heavyTraffic     {@code true} when current traffic significantly exceeds free-flow
  */
-public record RouteInfo(double miles, int trafficMinutes, int freeFlowMinutes, boolean heavyTraffic) {}
+public record RouteInfo(int trafficMinutes, int freeFlowMinutes, boolean heavyTraffic) {}

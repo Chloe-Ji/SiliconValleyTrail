@@ -38,7 +38,6 @@ import java.util.Locale;
  */
 public class MappingService {
     private static final int HTTP_OK = 200;
-    private static final double METERS_PER_MILE = 1609.344;
     private static final double HEAVY_TRAFFIC_RATIO = 1.5;
 
     private static final Path DEFAULT_DOTENV_PATH = Path.of(".env");
@@ -90,14 +89,12 @@ public class MappingService {
         try {
             int trafficSeconds = fetchDurationSeconds(from, to, "driving-traffic");
             int freeFlowSeconds = fetchDurationSeconds(from, to, "driving");
-            double meters = fetchDistanceMeters(from, to);
 
-            double miles = meters / METERS_PER_MILE;
             int trafficMinutes = Math.max(1, trafficSeconds / 60);
             int freeFlowMinutes = Math.max(1, freeFlowSeconds / 60);
             boolean isHeavy = trafficMinutes > freeFlowMinutes * HEAVY_TRAFFIC_RATIO;
 
-            return new RouteInfo(miles, trafficMinutes, freeFlowMinutes, isHeavy);
+            return new RouteInfo(trafficMinutes, freeFlowMinutes, isHeavy);
         } catch (Exception e) {
             System.out.println("⚠️ Mapbox unavailable, using default travel cost...");
             return null;
@@ -107,11 +104,6 @@ public class MappingService {
     private int fetchDurationSeconds(Location from, Location to, String profile) throws IOException, InterruptedException {
         JsonObject route = firstRoute(callMapbox(from, to, profile));
         return route.get("duration").getAsInt();
-    }
-
-    private double fetchDistanceMeters(Location from, Location to) throws IOException, InterruptedException {
-        JsonObject route = firstRoute(callMapbox(from, to, "driving-traffic"));
-        return route.get("distance").getAsDouble();
     }
 
     private String callMapbox(Location from, Location to, String profile) throws IOException, InterruptedException {
