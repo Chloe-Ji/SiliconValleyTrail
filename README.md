@@ -168,6 +168,7 @@ Day 1 | San Jose
 
 ------------------------------------------------------------
 What will you do?
+Options 1–5 advance the day: -$1,000 cash, -3 ☕
 ------------------------------------------------------------
 1. Travel to next location
    → 💰 spend $200 | 😊 morale drops slightly
@@ -181,7 +182,9 @@ What will you do?
    → 🐛 bugs decrease | 😊 morale drops slightly
 5. Marketing push
    → 💰 costs $1,500 | 📢 hype increases
-6. Coffee boost
+------------------------------------------------------------
+Free actions (no day advance):
+6. Coffee boost (once per day)
    → ☕ uses coffee | 😊 morale boost
 7. Save game
 8. Quit to menu

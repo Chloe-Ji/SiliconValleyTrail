@@ -85,10 +85,16 @@ public class DisplayManager {
 
     /**
      * Prints the per-day action menu with cost/effect summaries.
+     * <p>
+     * Options 1–5 advance the day and carry a fixed daily tax (−$1,000 cash,
+     * −3 coffee) that's stated once at the top rather than duplicated on every
+     * line. Options 6–8 are "free" — they don't advance the day — and are
+     * rendered in a separate block so the distinction is visually obvious.
      */
     public void printActionMenu() {
         System.out.println("\n------------------------------------------------------------");
         System.out.println("What will you do?");
+        System.out.println(hint("Options 1–5 advance the day: -$1,000 cash, -3 ☕"));
         System.out.println("------------------------------------------------------------");
         System.out.println("1. Travel to next location");
         System.out.println(hint("   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)"));
@@ -100,7 +106,9 @@ public class DisplayManager {
         System.out.println(hint("   -> 🐛 bugs decrease 5 | 😊 morale drops 10"));
         System.out.println("5. Marketing push (costs $1500)");
         System.out.println(hint("   -> spend 1500 | hype increases 15"));
-        System.out.println("6. Coffee boost (extra coffee for morale)");
+        System.out.println(hint("------------------------------------------------------------"));
+        System.out.println(hint("Free actions (no day advance):"));
+        System.out.println("6. Coffee boost (once per day)");
         System.out.println(hint("   -> uses 5 coffee | morale boost 15"));
         System.out.println("7. Save game");
         System.out.println("8. Quit to menu");
