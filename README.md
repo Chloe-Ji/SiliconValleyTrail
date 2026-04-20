@@ -30,12 +30,17 @@ When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distan
 
 Sign up for a free Mapbox token (no credit card) at https://account.mapbox.com/access-tokens/, then pick one of these three ways to make it available to the game:
 
-1. **Create a `.env` file at the project root** (recommended — persistent and simple):
+1. **Edit the committed `.env` file** (recommended — the template is already in the repo):
    ```bash
-   echo 'MAPBOX_TOKEN=pk.your-token-here' > .env
+   # Open .env at the project root and replace the empty value:
+   #   MAPBOX_TOKEN=pk.your-token-here
    mvn exec:java
    ```
-   `.env` is listed in `.gitignore`, so your token never gets committed.
+   `.env` is tracked in git so fresh clones see the template. **Before editing it with a real token**, run this once to stop your local edits from ever being staged by accident:
+   ```bash
+   git update-index --skip-worktree .env
+   ```
+   (Undo with `git update-index --no-skip-worktree .env` if you ever need to update the template itself.)
 
 2. **Export for the current shell session:**
    ```bash
@@ -109,32 +114,18 @@ Each turn you pick one of these. Options 1–5 advance the day; 6–8 do not.
 - **Win**: Reach San Francisco with resources intact
 - **Lose**: Cash ≤ 0 (bankrupt) or Morale ≤ 0 (burnout)
 
-### Saving, Quitting, and Auto-save
+### Saving and Exiting
 
-The game writes your progress to `save.json` (a single-slot save in the project root) in three ways:
+The game writes your progress to `save.json` (a single-slot save in the project root) **only when you explicitly save** — there is no auto-save. Use menu option **7** before quitting if you want to resume later.
 
-| Trigger | What it does | Feedback |
-|---|---|---|
-| **Auto-save** — at the end of every turn that advances the day | Writes silently so Ctrl+C, terminal close, power loss, or crash never loses more than the current action | None (silent) |
-| **Manual save** — menu option 7 | Writes explicitly with confirmation | "💾 Game saved!" banner |
-| **Quit to menu** — option 8 | Does *not* save, but the previous turn's auto-save is already on disk, so your state survives | None |
-
-**What this means in practice:**
-
-- You can exit the game at any time — pick **8** from the action menu, or just press **Ctrl+C**. Your progress survives either way. On next launch, pick **Load Game** from the main menu to resume.
-- One subtle behavior on a fatal turn (cash ≤ 0 or morale ≤ 0): the auto-save is **skipped**, so the save on disk reflects the turn *before* death. Load Game gives you one shot to replay the fatal choice instead of instantly re-seeing Game Over.
-- To start fresh, pick **New Game** from the main menu — this overwrites the current save on the next auto-save.
-
-### Exiting the Game
-
-| How | What happens |
+| Trigger | Effect |
 |---|---|
-| Menu option **8 — Quit to menu** | Clean exit to main menu; pick **Quit** (3) to leave the JVM. Save survives. |
-| Main menu option **3 — Quit** | Exits the process. Save survives. |
-| **Ctrl+C** anywhere | Abrupt JVM exit (SIGINT). Save from last completed turn survives. |
-| Terminal close / SSH disconnect | Same as Ctrl+C — last turn's auto-save survives. |
+| Menu option **7 — Save game** | Writes `save.json` and prints `💾 Game saved!` |
+| Menu option **8 — Quit to menu** | Returns to the main menu; **unsaved progress is lost** |
+| Main menu option **3 — Quit** | Exits the JVM; previously-saved progress remains on disk for the next launch |
+| **Ctrl+C** / terminal close / SSH disconnect | Abrupt exit; **unsaved progress is lost** |
 
-There's no "are you sure?" confirmation on Ctrl+C — that would require a shutdown hook prompting on stdin, which fights the user's clear "exit now" intent and is fragile across terminals. Auto-save-every-turn gives you the same safety with zero prompts. See the [Design Notes](#design-notes) section for the full reasoning.
+On next launch, pick **Load Game** from the main menu to resume from your last explicit save. Picking **New Game** starts fresh; your existing `save.json` stays on disk until you save over it.
 
 ### Example Session
 ```
@@ -160,8 +151,6 @@ Manage your resources wisely:
   📢 Hype - Public interest in your startup
   💻 Compute - Cloud credits for building product
   🐛 Bugs - Keep them under control
-
-💾 Your progress auto-saves at the end of every day.
 
 Good luck, founder!
 ============================================================
@@ -287,19 +276,7 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - `Effects` record bundles six resource changes (cash, morale, compute, coffee, hype, bugs) into a single object, used by both the event system and the display layer. This avoids passing loose integers and makes the code self-documenting.
 - Events contain a description, two choice labels, two `Effects` objects — one per choice — and an optional `Predicate<WeatherData>` condition. Unconditional events have `null` for the predicate. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today", "Press Feature in TechCrunch") are applied automatically without player input. The pool currently contains **12 events**: 9 unconditional (8 with choices, 1 quiet day) plus 3 weather-conditional.
 - `RouteInfo` captures the single leg result from `MappingService` (miles, traffic-aware minutes, free-flow minutes, heavy-traffic flag). It is never persisted — consumed and discarded inside `GameRunner.travel`.
-- Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. The game also **auto-saves at the end of every turn** via `SaveManager.saveQuietly(state)` so Ctrl+C, a terminal close, or a crash never loses progress. Auto-save is skipped on a losing turn so the on-disk save lets the player retry the fatal day rather than instantly replaying Game Over.
-
-### Save, Quit, and Ctrl+C UX
-
-Auto-save-every-turn was chosen over a shutdown hook that prompts "do you want to save?" for three reasons:
-
-1. **Shutdown hooks are brittle for interactive prompts.** They run on a separate thread while the main thread is still blocked on `Scanner.nextLine()`. Reading stdin from the hook works inconsistently across terminals (Terminal.app, iTerm, tmux, VS Code's integrated shell all behave differently). Output can race with the shutdown sequence and look garbled.
-2. **A second Ctrl+C force-kills the JVM** before the hook completes. Impatient users double-tap Ctrl+C routinely, which would defeat the prompt entirely.
-3. **Auto-save covers more failure modes.** A shutdown-hook prompt only catches clean SIGINT. Auto-save also covers terminal close, SSH disconnect, power loss, kernel panic, `kill -9`, and accidental `Cmd+Q` — none of those fire a JVM shutdown hook reliably.
-
-The tradeoff is that the menu's explicit "Save game" option (#7) is now slightly redundant — but it's kept because the "💾 Game saved!" banner is psychological reassurance for users who want to explicitly checkpoint before a risky turn.
-
-The `isGameOver()` guard around auto-save is a small but important nuance: without it, the fatal turn would overwrite the save with a dead state and Load Game would instantly replay Game Over. With it, the save on disk reflects the turn *before* death, giving the player exactly one retry of the fatal choice.
+- Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. Saves happen only on the explicit menu option 7 (matches the spec's sample flow); there is no auto-save.
 
 ### Error Handling
 
@@ -309,7 +286,7 @@ The `isGameOver()` guard around auto-save is a small but important nuance: witho
 - Missing save file: `SaveManager.load()` returns null, and `GameRunner` stays on the main menu with a message.
 - Resource boundaries: inline clamping in each mutation method prevents morale and hype from exceeding 0–100, and coffee/compute/bugs from going negative. Cash is intentionally not clamped — negative cash triggers the `isBankrupt()` game-over condition.
 - Both APIs down simultaneously: both degrade independently; the game uses randomized mock weather, skips Mapbox, and plays exactly like the offline version.
-- Ctrl+C mid-turn: JVM exits immediately. Nothing new is written, but the previous turn's auto-save is already on disk. Load Game on next launch drops the player back at the top of the current turn. See the "Save, Quit, and Ctrl+C UX" subsection above for the full rationale.
+- Ctrl+C mid-turn: JVM exits immediately; any unsaved progress is lost. Players should use menu option 7 to save before exiting if they want to resume.
 
 ### Tradeoffs & "If I Had More Time"
 
