@@ -8,19 +8,27 @@ A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Vall
 
 ### Play in the Browser (Codespaces — no install required)
 
-Click the badge above, or on this repo click **Code → Codespaces → Create codespace on main**. A browser-based Java 21 + Maven environment launches in ~2 min. Then in the integrated terminal:
+**Why Codespaces?** A terminal CLI game normally requires Java 21 and Maven on the reviewer's machine. Codespaces removes that barrier — one click launches a pre-configured dev environment in the browser so anyone can play the game in about two minutes with nothing installed locally. The spec asks for "screen recording or URL"; Codespaces is the "URL" path, and it also lets reviewers inspect or modify the code live if they want to poke around.
 
-```bash
-mvn exec:java
-```
+**How to use it:**
 
-To enable the optional Mapbox features inside your Codespace, edit `.env` and paste a token:
+1. **Launch the Codespace.** Click the green **Code** button on the repo page → **Codespaces** tab → **Create codespace on main**. Or click the badge at the top of this README. On first launch the container builds in ~2 minutes; subsequent launches are seconds.
+2. **Run the game.** Once the browser editor opens, a terminal appears at the bottom. Type:
+   ```bash
+   mvn exec:java
+   ```
+3. **(Pre-configured) Mapbox token.** The repo maintainer has stored a `MAPBOX_TOKEN` as a [Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-secrets-for-your-codespaces), so the full traffic-aware travel features are enabled automatically when you open a Codespace. No setup needed. If the secret isn't available for your account, the game prints a red "Mapbox not configured" warning at startup and plays normally without the traffic banners.
+4. **(Optional) Use your own token instead.** Open `.env` in the Codespace editor and replace the line with:
+   ```
+   MAPBOX_TOKEN=pk.your-own-token
+   ```
+   Get a free token (no credit card) at https://account.mapbox.com/access-tokens/. Changes take effect on the next `mvn exec:java`.
 
-```
-MAPBOX_TOKEN=pk.your-token-here
-```
-
-Get a free token (no credit card) at https://account.mapbox.com/access-tokens/.
+**What's configured in the Codespace:**
+- Java 21 (Temurin) + Maven 3.9.6, pre-warmed with `mvn compile` on first boot
+- VS Code Java Extension Pack for in-browser code navigation
+- Optional `MAPBOX_TOKEN` via a repository-level Codespaces secret
+- All tests run: `mvn test` (91 green)
 
 ### Run Locally
 #### Prerequisites
@@ -317,7 +325,10 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - Single save slot: Sufficient for a single-player game. Multi-slot support would only require parameterizing the save filename (e.g., `save_{slot}.json`).
 - Weather randomization: Real weather between nearby Silicon Valley cities is nearly identical. Added randomization on top of real API data as a compromise — the API integration is genuine, while the randomization ensures meaningful gameplay impact.
 - Event pool size: Currently 12 events (9 unconditional + 3 weather-conditional). With more time, the pool would expand to 20+ including events conditional on resource levels (e.g., a "team mutiny" event when morale is below 30) and time-of-journey (e.g., "pre-pitch jitters" on the last leg).
-- If more time: Add a scoring system based on final resources and days taken, implement difficulty levels, create a web-based UI with Spring Boot, add persistent high scores, and integrate a news/trends API (e.g., Hacker News Algolia) for hype-related events tied to real trending topics. The `MappingService` interface would also swap cleanly to Google Maps Directions by changing the URL and JSON path — handy if you already have a billing-enabled GCP project.
+- Deployment beyond Codespaces: Codespaces is the current browser-playable path and satisfies the "URL" half of the spec's deliverable. With more time, I'd explore two progressively richer deployment models:
+  - **Browser-native terminal** — wrap `GameRunner` in a Spring Boot or Javalin server with a `xterm.js` front-end over WebSockets. Keystrokes pipe into `InputHandler`; stdout streams back to the browser. Session state stays in-memory per connection. Deploy to Fly.io/Render/Railway. Preserves the CLI feel without requiring any install or Codespaces. Roughly 2–3 days of work.
+  - **Full web service** — stateless workers fronted by a load balancer; `StartupState` lives in Postgres (durable) + Redis (active session, API response cache). Game logic exposed as REST endpoints (`POST /games/{id}/actions`). Horizontal scale, multi-region deployment, SLO-driven alerting. This is the architecture I'd choose if the game needed to serve 1M DAU; the SI Signal Prompt discussion covers the bottleneck analysis and fix order. Weeks of work; out of scope for a take-home but worth naming to show awareness of what production deployment looks like.
+- If more time: Add a scoring system based on final resources and days taken, implement difficulty levels, add persistent high scores, and integrate a news/trends API (e.g., Hacker News Algolia) for hype-related events tied to real trending topics. The `MappingService` interface would also swap cleanly to Google Maps Directions by changing the URL and JSON path — handy if you already have a billing-enabled GCP project.
 
 ### Tests
 
