@@ -10,10 +10,10 @@ package io.github.chloeji.svtrail.model;
  */
 public class StartupState {
     private static final int INITIAL_CASH = 20000;
-    private static final int DAILY_COFFEE_DRAIN = 5;
+    private static final int DAILY_COFFEE_DRAIN = 3;
     private static final int EXTRA_COFFEE_COST = 5;
     private static final int INITIAL_HYPE = 50;
-    private static final int INITIAL_MORALE = 100;
+    private static final int INITIAL_MORALE = 70;
     private static final int INITIAL_COFFEE = 50;
     private static final int INITIAL_COMPUTE = 100;
     private static final int DAILY_EXPENSE = 1000;

@@ -19,7 +19,7 @@ public class StartupStateTest {
     @Test
     void initialState_hasCorrectDefaults() {
         assertEquals(20000, state.getCash());
-        assertEquals(100, state.getMorale());
+        assertEquals(70, state.getMorale());
         assertEquals(50, state.getCoffee());
         assertEquals(100, state.getComputeCredits());
         assertEquals(50, state.getHype());
