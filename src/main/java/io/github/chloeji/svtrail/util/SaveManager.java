@@ -29,41 +29,19 @@ public class SaveManager {
     /**
      * Serializes the given state to {@link #SAVE_FILE} and prints a
      * confirmation banner. Used by the menu's explicit Save option.
+     * <p>
+     * Degrades gracefully on I/O failure: the session stays playable even if
+     * the disk is read-only or full, and the exception is intentionally not
+     * propagated — the player just sees the warning.
      *
      * @param state the state to persist
      */
     public void save(StartupState state) {
-        if (writeToDisk(state)) {
-            System.out.println("💾 Game saved!");
-        } else {
-            System.out.println("⚠️ Failed to save game.");
-        }
-    }
-
-    /**
-     * Serializes the given state to {@link #SAVE_FILE} without any console
-     * output. Used as a silent auto-save after every completed turn so the
-     * player never loses progress to a Ctrl+C, terminal close, or kernel
-     * panic — the manual {@link #save} still exists for explicit confirmation.
-     *
-     * @param state the state to persist
-     */
-    public void saveQuietly(StartupState state) {
-        writeToDisk(state);
-    }
-
-    /**
-     * Writes {@code state} to the save file. Returns {@code true} on success.
-     * Degrades gracefully on I/O failure: the session stays playable even if
-     * the disk is read-only or full, and the exception is intentionally not
-     * propagated — the caller decides whether to inform the player.
-     */
-    private boolean writeToDisk(StartupState state) {
         try (Writer writer = new FileWriter(SAVE_FILE)) {
             gson.toJson(state, writer);
-            return true;
+            System.out.println("💾 Game saved!");
         } catch (IOException e) {
-            return false;
+            System.out.println("⚠️ Failed to save game.");
         }
     }
 
