@@ -1,49 +1,15 @@
 # 🚀 Silicon Valley Trail
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Chloe-Ji/SiliconValleyTrail)
-[![Run on Replit](https://replit.com/badge/github/Chloe-Ji/SiliconValleyTrail)](https://replit.com/new/github.com/Chloe-Ji/SiliconValleyTrail)
-
 A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Valley. Guide a scrappy startup team from San Jose to San Francisco to pitch for Series A funding — managing cash, morale, coffee, and compute credits along the way.
 
 ## Quick Start
 
-### Play in the Browser (Codespaces — no install required)
-
-**Why Codespaces?** A terminal CLI game normally requires Java 21 and Maven installed locally. Codespaces removes that barrier — one click launches a pre-configured dev environment in the browser, so the game is playable in about two minutes with nothing installed. The environment also ships with the VS Code Java Extension Pack, so the code can be navigated, edited, or re-tested live alongside playing.
-
-**How to use it:**
-
-1. **Launch the Codespace.** Click the green **Code** button on the repo page → **Codespaces** tab → **Create codespace on main**. Or click the badge at the top of this README. On first launch the container builds in ~2 minutes; subsequent launches are seconds.
-2. **Run the game.** Once the browser editor opens, a terminal appears at the bottom. Type:
-   ```bash
-   mvn exec:java
-   ```
-
-That's it — you should see the main menu. The **Mapbox traffic-aware travel features are already configured**: `MAPBOX_TOKEN` is stored as a [repository Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-secrets-for-your-codespaces), so GitHub auto-injects it into your Codespace environment on launch. You may see a one-time prompt asking you to authorize the secret — click **Authorize**. No other token setup is needed.
-
-> **Note for enterprise / managed GitHub accounts:** some organizations (e.g. large employers on GitHub Enterprise) disable Codespaces at the org level as a policy. If clicking "Create codespace" is greyed out or errors with a permissions message, sign in with a **personal GitHub account** instead and try again — Codespaces works on any individual account with the [free tier](https://docs.github.com/en/billing/managing-billing-for-github-codespaces/about-billing-for-github-codespaces) (120 core-hours/month). Or skip the Codespaces path entirely and follow the [Run Locally](#run-locally) section below.
-
-**What's configured in the Codespace:**
-- Java 21 (Temurin) + Maven 3.9.6, pre-warmed with `mvn compile` on first boot
-- VS Code Java Extension Pack for in-browser code navigation
-- `MAPBOX_TOKEN` auto-injected from the repo's Codespaces secret
-- All tests run: `mvn test` (79 green)
-
-### Play in the Browser (Replit — fallback for restricted GitHub accounts)
-
-Click the **Run on Replit** badge at the top of this README, or go to https://replit.com/new/github.com/Chloe-Ji/SiliconValleyTrail. Replit forks the repo into your Replit account, sets up Java 21 + Maven automatically via the committed `.replit` and `replit.nix` config, and runs `mvn exec:java` when you click **Run**.
-
-**Why Replit as a second option?** Replit supports GitHub, Google, and email sign-ins, so it works when a GitHub Enterprise org has disabled Codespaces.
-
-**Mapbox on Replit:** the `MAPBOX_TOKEN` Codespaces secret does not cross over — Replit has its own **Secrets** panel (🔒 icon in the left sidebar). To enable Mapbox features on Replit, add a secret named `MAPBOX_TOKEN` with a free token from https://account.mapbox.com/access-tokens/. Without it the game plays normally minus the traffic banners, same as the offline-mode behavior.
-
-### Run Locally
-#### Prerequisites
+### Prerequisites
 
 - Java 21+
 - Maven 3.6+
 
-#### Build & Run
+### Build & Run
 
 ```bash
 git clone https://github.com/Chloe-Ji/SiliconValleyTrail.git
@@ -324,8 +290,8 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - Single save slot: Sufficient for a single-player game. Multi-slot support would only require parameterizing the save filename (e.g., `save_{slot}.json`).
 - Weather randomization: Real weather between nearby Silicon Valley cities is nearly identical. Added randomization on top of real API data as a compromise — the API integration is genuine, while the randomization ensures meaningful gameplay impact.
 - Event pool size: Currently 7 events (5 unconditional + 2 weather-conditional). With more time, the pool would expand to 20+ including events conditional on resource levels (e.g., a "team mutiny" event when morale is below 30) and time-of-journey (e.g., "pre-pitch jitters" on the last leg).
-- Deployment beyond Codespaces: Codespaces is the current browser-playable path. With more time, two richer deployment models are natural next steps:
-  - **Browser-native terminal** — wrap `GameRunner` in a Spring Boot or Javalin server with an `xterm.js` front-end over WebSockets. Keystrokes pipe into `InputHandler`; stdout streams back to the browser. Session state stays in-memory per connection. Deploy to Fly.io, Render, or Railway. Preserves the CLI feel without requiring any install or Codespaces. Roughly 2–3 days of work.
+- Deployment: the game is a CLI app — reviewers clone and run locally. With more time, two natural deployment paths would extend reach:
+  - **Browser-native terminal** — wrap `GameRunner` in a Spring Boot or Javalin server with an `xterm.js` front-end over WebSockets. Keystrokes pipe into `InputHandler`; stdout streams back to the browser. Session state stays in-memory per connection. Deploy to Fly.io, Render, or Railway. Preserves the CLI feel without any install on the player's side. Roughly 2–3 days of work.
   - **Full web service** — stateless workers fronted by a load balancer; `StartupState` lives in Postgres (durable) + Redis (active session, API response cache). Game logic exposed as REST endpoints (`POST /games/{id}/actions`). Horizontal scale, multi-region deployment, SLO-driven alerting. This is the architecture to reach for at ~1M DAU, where Open-Meteo and Mapbox rate limits become the primary bottleneck and caching external APIs (keyed by `(city, hour)` with a 1-hour TTL) is the single highest-leverage fix.
 - If more time: Add a scoring system based on final resources and days taken, implement difficulty levels, add persistent high scores, and integrate a news/trends API (e.g., Hacker News Algolia) for events tied to real trending topics. The `MappingService` interface would also swap cleanly to Google Maps Directions by changing the URL and JSON path — handy if you already have a billing-enabled GCP project.
 
