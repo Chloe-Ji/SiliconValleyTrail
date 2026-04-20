@@ -27,21 +27,43 @@ public class SaveManager {
     }
 
     /**
-     * Serializes the given state to {@link #SAVE_FILE}. On I/O failure the
-     * game continues running and the player is informed; there is no further
-     * recovery because the next save attempt is equally cheap.
+     * Serializes the given state to {@link #SAVE_FILE} and prints a
+     * confirmation banner. Used by the menu's explicit Save option.
      *
      * @param state the state to persist
      */
     public void save(StartupState state) {
+        if (writeToDisk(state)) {
+            System.out.println("💾 Game saved!");
+        } else {
+            System.out.println("⚠️ Failed to save game.");
+        }
+    }
+
+    /**
+     * Serializes the given state to {@link #SAVE_FILE} without any console
+     * output. Used as a silent auto-save after every completed turn so the
+     * player never loses progress to a Ctrl+C, terminal close, or kernel
+     * panic — the manual {@link #save} still exists for explicit confirmation.
+     *
+     * @param state the state to persist
+     */
+    public void saveQuietly(StartupState state) {
+        writeToDisk(state);
+    }
+
+    /**
+     * Writes {@code state} to the save file. Returns {@code true} on success.
+     * Degrades gracefully on I/O failure: the session stays playable even if
+     * the disk is read-only or full, and the exception is intentionally not
+     * propagated — the caller decides whether to inform the player.
+     */
+    private boolean writeToDisk(StartupState state) {
         try (Writer writer = new FileWriter(SAVE_FILE)) {
             gson.toJson(state, writer);
-            System.out.println("💾 Game saved!");
+            return true;
         } catch (IOException e) {
-            // Degrade gracefully: the session stays playable even if the disk
-            // is read-only or full. The player can retry or continue without
-            // saving; we do not propagate the exception.
-            System.out.println("⚠️ Failed to save game.");
+            return false;
         }
     }
 

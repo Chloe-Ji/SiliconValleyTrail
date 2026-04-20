@@ -12,6 +12,16 @@ import io.github.chloeji.svtrail.model.WeatherData;
  */
 public class DisplayManager {
 
+    // Dim + italic + gray — used to de-emphasize the cost/effect hints under
+    // each menu option so the action labels stand out. Supported in most
+    // modern terminals; legacy consoles fall back to plain text.
+    private static final String ANSI_HINT = "\u001B[2;3;90m";
+    private static final String ANSI_RESET = "\u001B[0m";
+
+    private static String hint(String text) {
+        return ANSI_HINT + text + ANSI_RESET;
+    }
+
     /**
      * Prints the top-level menu shown when the game launches or returns from
      * a session.
@@ -40,6 +50,7 @@ public class DisplayManager {
         System.out.println("  ☕ Coffee - Essential fuel (2 days without = Morale drops dramatically)");
         System.out.println("  📢 Hype - Public interest in your startup");
         System.out.println("  💻 Compute Credits - Cloud credits for building product");
+        System.out.println("\n💾 Your progress auto-saves at the end of every day.");
         System.out.println("\nGood luck, founder!");
         System.out.println("============================================================");
     }
@@ -81,17 +92,17 @@ public class DisplayManager {
         System.out.println("What will you do?");
         System.out.println("------------------------------------------------------------");
         System.out.println("1. Travel to next location");
-        System.out.println("   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)");
+        System.out.println(hint("   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)"));
         System.out.println("2. Rest and recover");
-        System.out.println("   -> morale boost 30");
+        System.out.println(hint("   -> morale boost 30"));
         System.out.println("3. Work on product");
-        System.out.println("   -> uses 10 compute credits | hype increases 20 (no compute credits: morale drops 15) | 🐛 bugs increase");
+        System.out.println(hint("   -> uses 10 compute credits | hype increases 20 (no compute credits: morale drops 15) | 🐛 bugs increase"));
         System.out.println("4. Fix bugs");
-        System.out.println("   -> 🐛 bugs decrease 5 | 😊 morale drops 10");
+        System.out.println(hint("   -> 🐛 bugs decrease 5 | 😊 morale drops 10"));
         System.out.println("5. Marketing push (costs $1500)");
-        System.out.println("   -> spend 1500 | hype increases 15");
+        System.out.println(hint("   -> spend 1500 | hype increases 15"));
         System.out.println("6. Coffee boost (extra coffee for morale)");
-        System.out.println("   -> uses 5 coffee | morale boost 15");
+        System.out.println(hint("   -> uses 5 coffee | morale boost 15"));
         System.out.println("7. Save game");
         System.out.println("8. Quit to menu");
     }

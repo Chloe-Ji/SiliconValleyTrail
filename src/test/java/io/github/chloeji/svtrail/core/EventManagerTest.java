@@ -2,12 +2,18 @@ package io.github.chloeji.svtrail.core;
 
 import io.github.chloeji.svtrail.model.Event;
 import io.github.chloeji.svtrail.model.Effects;
+import io.github.chloeji.svtrail.model.WeatherData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EventManagerTest {
+    private static final WeatherData CLEAR = new WeatherData("Clear sky", 70, false);
+    private static final WeatherData HOT = new WeatherData("Clear sky", 92, false);
+    private static final WeatherData THUNDER = new WeatherData("Thunderstorm", 60, true);
+    private static final WeatherData FOG = new WeatherData("Foggy", 55, false);
+
     private EventManager eventManager;
 
     @BeforeEach
@@ -92,7 +98,7 @@ public class EventManagerTest {
     void nothingEvent_hasNullChoices() {
         EventManager em = new EventManager(new Random(0));
         boolean foundNothingEvent = false;
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 100; i++) {
             Event event = em.getRandomEvent();
             if (event.description().contains("Nothing eventful")) {
                 assertNull(event.choice1());
@@ -107,7 +113,7 @@ public class EventManagerTest {
     @Test
     void nothingEvent_hasZeroEffects() {
         EventManager em = new EventManager(new Random(0));
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 100; i++) {
             Event event = em.getRandomEvent();
             if (event.description().contains("Nothing eventful")) {
                 Effects effects = event.choice1Effects();
@@ -120,7 +126,7 @@ public class EventManagerTest {
                 return;
             }
         }
-        fail("Nothing event not found in 50 attempts");
+        fail("Nothing event not found in 100 attempts");
     }
 
     // ==========================================
@@ -153,5 +159,82 @@ public class EventManagerTest {
             }
         }
         assertTrue(foundDifferent);
+    }
+
+    // ==========================================
+    // Weather-Conditional Filtering
+    // ==========================================
+
+    @Test
+    void clearWeather_neverReturnsOverheatingEvent() {
+        EventManager em = new EventManager(new Random(7));
+        for (int i = 0; i < 200; i++) {
+            Event event = em.getRandomEvent(CLEAR);
+            assertFalse(event.description().contains("Overheating"),
+                    "Overheating event should not fire in clear weather");
+        }
+    }
+
+    @Test
+    void hotWeather_canReturnOverheatingEvent() {
+        EventManager em = new EventManager(new Random(0));
+        boolean found = false;
+        for (int i = 0; i < 200; i++) {
+            Event event = em.getRandomEvent(HOT);
+            if (event.description().contains("Overheating")) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "Overheating event should be reachable on hot days");
+    }
+
+    @Test
+    void thunderstorm_canReturnPowerOutageEvent() {
+        EventManager em = new EventManager(new Random(0));
+        boolean found = false;
+        for (int i = 0; i < 200; i++) {
+            Event event = em.getRandomEvent(THUNDER);
+            if (event.description().contains("Power Outage")) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "Power Outage event should be reachable in a thunderstorm");
+    }
+
+    @Test
+    void clearWeather_neverReturnsPowerOutage() {
+        EventManager em = new EventManager(new Random(5));
+        for (int i = 0; i < 200; i++) {
+            Event event = em.getRandomEvent(CLEAR);
+            assertFalse(event.description().contains("Power Outage"),
+                    "Power Outage event should not fire in clear weather");
+        }
+    }
+
+    @Test
+    void fog_canReturnFoggyAccidentEvent() {
+        EventManager em = new EventManager(new Random(0));
+        boolean found = false;
+        for (int i = 0; i < 200; i++) {
+            Event event = em.getRandomEvent(FOG);
+            if (event.description().contains("Foggy 101")) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "Foggy 101 Accident event should be reachable in foggy weather");
+    }
+
+    @Test
+    void getRandomEventWithWeather_neverNull() {
+        EventManager em = new EventManager(new Random(0));
+        for (int i = 0; i < 50; i++) {
+            assertNotNull(em.getRandomEvent(CLEAR));
+            assertNotNull(em.getRandomEvent(HOT));
+            assertNotNull(em.getRandomEvent(THUNDER));
+            assertNotNull(em.getRandomEvent(FOG));
+        }
     }
 }
