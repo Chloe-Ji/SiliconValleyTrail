@@ -18,9 +18,9 @@ public class StartupStateTest {
 
     @Test
     void initialState_hasCorrectDefaults() {
-        assertEquals(50000, state.getCash());
+        assertEquals(20000, state.getCash());
         assertEquals(100, state.getMorale());
-        assertEquals(100, state.getCoffee());
+        assertEquals(50, state.getCoffee());
         assertEquals(100, state.getComputeCredits());
         assertEquals(50, state.getHype());
         assertEquals(0, state.getBugs());
@@ -89,7 +89,7 @@ public class StartupStateTest {
     @Test
     void rest_deductsDailyExpense() {
         state.rest();
-        assertEquals(49000, state.getCash());
+        assertEquals(19000, state.getCash());
     }
 
     // ==========================================
@@ -168,13 +168,13 @@ public class StartupStateTest {
     @Test
     void travel_goodWeather_normalCost() {
         state.travelToNextStop(false);
-        assertEquals(50000 - 200 - 1000, state.getCash());
+        assertEquals(20000 - 200 - 1000, state.getCash());
     }
 
     @Test
     void travel_badWeather_extraCost() {
         state.travelToNextStop(true);
-        assertEquals(50000 - 700 - 1000, state.getCash());
+        assertEquals(20000 - 700 - 1000, state.getCash());
     }
 
     @Test
@@ -208,7 +208,7 @@ public class StartupStateTest {
     @Test
     void marketingPush_costsCash() {
         state.marketingPush();
-        assertEquals(50000 - 1500 - 1000, state.getCash());
+        assertEquals(20000 - 1500 - 1000, state.getCash());
     }
 
     @Test
@@ -234,7 +234,7 @@ public class StartupStateTest {
         state.setMorale(70);
         assertTrue(state.coffeeBoost());
         assertEquals(85, state.getMorale());
-        assertEquals(95, state.getCoffee());
+        assertEquals(45, state.getCoffee());
     }
 
     @Test
@@ -303,9 +303,9 @@ public class StartupStateTest {
     void applyEventEffects_appliesAllChanges() {
         Effects effects = new Effects(1000, 10, 5, 3, 5, 2);
         state.applyEventEffects(effects);
-        assertEquals(51000, state.getCash());
+        assertEquals(21000, state.getCash());
         assertEquals(55, state.getHype());
-        assertEquals(103, state.getCoffee());
+        assertEquals(53, state.getCoffee());
         assertEquals(2, state.getBugs());
     }
 
