@@ -85,9 +85,9 @@ You manage a startup team traveling through 10 real Silicon Valley locations. Ea
 
 ### Actions
 
-Each turn you pick one of these. Options 1–5 advance the day; 6–8 do not.
+Each turn you pick one of these. **Options 1–5 advance the day** and each pay the fixed daily tax of **−$1,000 cash and −3 coffee** on top of their per-action effect; **6–8 are free** and do not advance the day.
 
-| # | Action | Effect | Advances day? |
+| # | Action | Effect (on top of the daily tax for 1–5) | Advances day? |
 |---|--------|--------|---|
 | 1 | Travel to next location | Spend cash, morale drops (worse in bad weather). Only this action fires a random event on arrival. | ✅ |
 | 2 | Rest and recover | Morale restored significantly | ✅ |
@@ -96,7 +96,7 @@ Each turn you pick one of these. Options 1–5 advance the day; 6–8 do not.
 | 5 | Marketing push | Costs $1,500, hype increases | ✅ |
 | 6 | Coffee boost | Uses coffee, morale boost (once per day) | ❌ |
 | 7 | Save game (explicit) | Writes `save.json` with a "💾 Game saved!" banner | ❌ |
-| 8 | Quit to menu | Returns to the main menu without losing progress | ❌ |
+| 8 | Quit to menu | Returns to the main menu; **unsaved progress is lost** — save first if you want to resume | ❌ |
 
 ### Resources
 
@@ -168,6 +168,7 @@ Day 1 | San Jose
 
 ------------------------------------------------------------
 What will you do?
+Options 1–5 advance the day: -$1,000 cash, -3 ☕
 ------------------------------------------------------------
 1. Travel to next location
    → 💰 spend $200 | 😊 morale drops slightly
@@ -181,7 +182,9 @@ What will you do?
    → 🐛 bugs decrease | 😊 morale drops slightly
 5. Marketing push
    → 💰 costs $1,500 | 📢 hype increases
-6. Coffee boost
+------------------------------------------------------------
+Free actions (no day advance):
+6. Coffee boost (once per day)
    → ☕ uses coffee | 😊 morale boost
 7. Save game
 8. Quit to menu
