@@ -48,7 +48,7 @@ The game integrates two public APIs that change gameplay. Both degrade gracefull
 The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather. Bad weather (rain, drizzle, snow, thunderstorm) adds $500 to travel cost and drops morale. Certain events (Power Outage, Foggy 101 Accident) are gated on live weather conditions and only fire when the weather matches. On network failure the game falls back to randomized mock weather.
 
 **2. Mapbox Directions (traffic & distance) — optional, requires free token**
-When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distance and traffic-aware duration between the two cities. Heavy traffic (>1.5× free-flow duration) triggers a morale dip; long legs (>6 miles) add a small fuel surcharge. Without a token the game prints a one-line hint at startup and skips these features.
+When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distance and traffic-aware duration between the two cities. Heavy traffic (>1.5× free-flow duration) triggers a morale dip. Without a token the game prints a one-line hint at startup and skips this feature.
 
 **Setting up Mapbox (optional):**
 
@@ -84,7 +84,7 @@ The code resolves the token in two steps: first `System.getenv("MAPBOX_TOKEN")`,
 The game is fully playable with no network access and no API tokens:
 
 - **Open-Meteo** failures drop to a randomized mock weather pool. Bad-weather gameplay penalties still fire; weather-conditional events still appear on matching mock conditions.
-- **Mapbox** is optional. Without a token (or offline) `MappingService` silently skips the heavy-traffic and long-leg effects and the game prints one warning at startup.
+- **Mapbox** is optional. Without a token (or offline) `MappingService` silently skips the heavy-traffic effect and the game prints one warning at startup.
 - **Save/Load** uses local disk — no cloud dependency.
 - **Tests** use stubbed `HttpClient` and `@TempDir`, so `mvn test` passes offline.
 
@@ -290,9 +290,9 @@ Fallback strategy: Two-layer graceful degradation:
 
 ### Why Mapbox Directions & How It Affects Gameplay
 
-Why this API: The spec asked for at least one external API and suggested Mapping/Routing as one of the categories. Mapbox returns real driving distance and a traffic-aware duration between two lat/lon points, which maps directly to the "long leg today" and "stuck in traffic" gameplay hooks the spec called out. Free tier signup takes under a minute, no credit card required.
+Why this API: The game needed at least one external API and Mapping/Routing was a natural fit. Mapbox returns real driving distance and a traffic-aware duration between two lat/lon points, which maps directly to the "stuck in traffic" gameplay hook. Free tier signup takes under a minute, no credit card required.
 
-How it affects gameplay: On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` for current conditions, `driving` for the free-flow baseline). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit. If distance > 6 miles the leg is a "long leg" and a $100 fuel surcharge is deducted. Both effects stack with the base travel cost and the weather penalty.
+How it affects gameplay: On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` for current conditions, `driving` for the free-flow baseline). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit. This effect stacks with the base travel cost and the weather penalty.
 
 Token handling: `MappingService.resolveToken()` checks two sources in order — the `MAPBOX_TOKEN` environment variable (standard for CI and shells) and then a `MAPBOX_TOKEN=` entry inside a `.env` file at the project root (the convention most Node/Python/Ruby devs expect). `.env` is in `.gitignore`, so the token never lands in source control. When both sources are missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line red warning at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
 
@@ -308,7 +308,7 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 ### Error Handling
 
 - Open-Meteo timeout/failure: caught in try-catch, falls back to mock weather with a warning message. Game never crashes due to network issues.
-- Mapbox timeout/failure or missing token: `MappingService.getRouteInfo` returns `null`. The travel action silently skips the traffic/long-leg effects and applies base travel cost only. A single startup hint informs the user when the token is absent.
+- Mapbox timeout/failure or missing token: `MappingService.getRouteInfo` returns `null`. The travel action silently skips the traffic effect and applies base travel cost only. A single startup hint informs the user when the token is absent.
 - Invalid user input: `InputHandler` loops with a clear error message until a valid number in range is entered.
 - Missing save file: `SaveManager.load()` returns null, and `GameRunner` stays on the main menu with a message.
 - Resource boundaries: inline clamping in each mutation method prevents morale and hype from exceeding 0–100, and coffee/compute/bugs from going negative. Cash is intentionally not clamped — negative cash triggers the `isBankrupt()` game-over condition.
