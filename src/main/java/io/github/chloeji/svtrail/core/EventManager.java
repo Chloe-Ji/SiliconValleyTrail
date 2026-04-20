@@ -16,12 +16,10 @@ import java.util.function.Predicate;
  * <p>
  * Events may be unconditional (eligible any day) or weather-conditional — the
  * latter only enter the draw when the current {@link WeatherData} matches the
- * event's predicate. This lets bad-weather scenarios (outages, overheating,
- * fog accidents) surface only when the live weather justifies them.
+ * event's predicate. This lets bad-weather scenarios (outages, fog accidents)
+ * surface only when the live weather justifies them.
  */
 public class EventManager {
-    private static final int HOT_WEATHER_THRESHOLD_F = 80;
-
     // Match tokens gate weather-conditional events against the human-readable
     // condition string from WeatherService.describeWeatherCode. Kept as named
     // constants so the predicates aren't coupled to raw magic strings.
@@ -30,8 +28,6 @@ public class EventManager {
 
     private static final Predicate<WeatherData> IS_THUNDERSTORM =
             w -> containsToken(w.condition(), THUNDER_TOKEN);
-    private static final Predicate<WeatherData> IS_HOT =
-            w -> w.temperature() > HOT_WEATHER_THRESHOLD_F;
     private static final Predicate<WeatherData> IS_FOGGY =
             w -> containsToken(w.condition(), FOG_TOKEN);
 
@@ -77,39 +73,16 @@ public class EventManager {
                         new Effects(-1000, -20, -10, -3, 5, -3),
                         new Effects(0, -5, 0, 0, -15, 5)),
 
-                new Event("Hackathon Invitation — A 24-hour hackathon is happening nearby.",
-                        "Participate (costs coffee, could boost product)",
-                        "Skip it, stay focused on the road",
-                        new Effects(2000, -10, 15, -8, 20, 3),
-                        new Effects(0, 5, 0, 0, 0, 0)),
-
                 new Event("Talent Poached — A FAANG recruiter is targeting your lead engineer.",
                         "Counter-offer with cash to retain them",
                         "Let them go, hire a junior instead",
                         new Effects(-5000, 10, 0, 0, 0, 0),
                         new Effects(0, -20, -10, 0, -5, 5)),
 
-                new Event("Demo Day Slot — An accelerator offers you a demo slot tomorrow.",
-                        "Pull an all-nighter to prep (big upside, ship bugs)",
-                        "Decline, keep shipping quietly",
-                        new Effects(6000, -10, 0, -5, 20, 3),
-                        new Effects(0, 0, 0, 0, 0, 0)),
-
-                new Event("PR Crisis on Twitter — Someone's ranting about your product.",
-                        "Publicly apologize and patch fast (morale dip, hype recovers)",
-                        "Ignore it and keep building",
-                        new Effects(0, -10, 0, 0, 10, 0),
-                        new Effects(0, 0, 0, 0, -15, 5)),
-
                 new Event("Mentor Office Hours — A well-known founder has an open slot.",
                         "Attend (morale & compute credits offered)",
                         "Skip to save the day",
                         new Effects(0, 15, 20, 0, 0, 0),
-                        new Effects(0, 0, 0, 0, 0, 0)),
-
-                new Event("Press Feature in TechCrunch — A journalist wrote about your startup!",
-                        null, null,
-                        new Effects(0, 5, 0, 0, 20, 0),
                         new Effects(0, 0, 0, 0, 0, 0)),
 
                 new Event("Nothing eventful today — A quiet day on the road.",
@@ -125,13 +98,6 @@ public class EventManager {
                         new Effects(0, -10, -10, 0, -5, 3),
                         IS_THUNDERSTORM),
 
-                new Event("Server Overheating — Heat wave is spiking data-center temps.",
-                        "Pay for emergency cooling (expensive, saves uptime)",
-                        "Throttle services (cheap, hype drops)",
-                        new Effects(-2000, 0, -5, 0, 0, 0),
-                        new Effects(0, -5, 0, 0, -10, 5),
-                        IS_HOT),
-
                 new Event("Foggy 101 Accident — A pileup on the freeway snarls traffic.",
                         "Reroute through local streets (costs coffee, preserves schedule)",
                         "Wait it out (morale drops from boredom)",
@@ -143,9 +109,9 @@ public class EventManager {
 
     /**
      * Convenience overload equivalent to {@link #getRandomEvent(WeatherData)}
-     * called with a clear-sky {@link WeatherData} — hot, thunderstorm, and
-     * foggy conditional events are therefore ineligible. Kept for tests and
-     * call sites that don't have weather context.
+     * called with a clear-sky {@link WeatherData} — thunderstorm and foggy
+     * conditional events are therefore ineligible. Kept for tests and call
+     * sites that don't have weather context.
      *
      * @return a non-null {@link Event} drawn from the unconditional subset of the pool
      */

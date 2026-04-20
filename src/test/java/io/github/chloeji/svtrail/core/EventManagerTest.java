@@ -166,30 +166,6 @@ public class EventManagerTest {
     // ==========================================
 
     @Test
-    void clearWeather_neverReturnsOverheatingEvent() {
-        EventManager em = new EventManager(new Random(7));
-        for (int i = 0; i < 200; i++) {
-            Event event = em.getRandomEvent(CLEAR);
-            assertFalse(event.description().contains("Overheating"),
-                    "Overheating event should not fire in clear weather");
-        }
-    }
-
-    @Test
-    void hotWeather_canReturnOverheatingEvent() {
-        EventManager em = new EventManager(new Random(0));
-        boolean found = false;
-        for (int i = 0; i < 200; i++) {
-            Event event = em.getRandomEvent(HOT);
-            if (event.description().contains("Overheating")) {
-                found = true;
-                break;
-            }
-        }
-        assertTrue(found, "Overheating event should be reachable on hot days");
-    }
-
-    @Test
     void thunderstorm_canReturnPowerOutageEvent() {
         EventManager em = new EventManager(new Random(0));
         boolean found = false;
