@@ -106,6 +106,8 @@ public class GameRunner {
     // ==========================================
 
     private void gameLoop() {
+        // Outer loop = one day. Weather and progress are fetched once per day
+        // so a mid-day action (coffee boost, save) doesn't re-hit the API.
         while (!state.isGameOver()) {
             Location current = routeMap.getLocation(state.getCurrentIndex());
 
@@ -116,20 +118,28 @@ public class GameRunner {
 
             WeatherData weather = weatherService.fetchWeather(current);
             int progress = routeMap.progressPercent(state.getCurrentIndex());
-            display.printDayStatus(state, current, weather, progress);
-            display.printActionMenu();
+            int dayBefore = state.getCurrentDay();
 
-            int choice = inputHandler.getUserChoice(1, 8);
-            switch (choice) {
-                case 1 -> travel(weather);
-                case 2 -> rest();
-                case 3 -> workOnProduct();
-                case 4 -> fixBugs();
-                case 5 -> marketingPush();
-                case 6 -> boostEnergy();
-                case 7 -> saveManager.save(state);
-                case 8 -> {
-                    return;
+            // Inner loop = actions within this same day. Stays until either
+            // the day advances (travel / rest / work / fix / marketing) or
+            // the game ends. Coffee boost and Save keep us in the inner loop
+            // so the player can stack them with another action on the same day.
+            while (state.getCurrentDay() == dayBefore && !state.isGameOver()) {
+                display.printDayStatus(state, current, weather, progress);
+                display.printActionMenu();
+
+                int choice = inputHandler.getUserChoice(1, 8);
+                switch (choice) {
+                    case 1 -> travel(weather);
+                    case 2 -> rest();
+                    case 3 -> workOnProduct();
+                    case 4 -> fixBugs();
+                    case 5 -> marketingPush();
+                    case 6 -> boostEnergy();
+                    case 7 -> saveManager.save(state);
+                    case 8 -> {
+                        return;
+                    }
                 }
             }
         }
