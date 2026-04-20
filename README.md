@@ -1,6 +1,7 @@
 # 🚀 Silicon Valley Trail
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Chloe-Ji/SiliconValleyTrail)
+[![Run on Replit](https://replit.com/badge/github/Chloe-Ji/SiliconValleyTrail)](https://replit.com/new/github.com/Chloe-Ji/SiliconValleyTrail)
 
 A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Valley. Guide a scrappy startup team from San Jose to San Francisco to pitch for Series A funding — managing cash, morale, coffee, and compute credits along the way.
 
@@ -27,6 +28,14 @@ That's it — you should see the main menu. The **Mapbox traffic-aware travel fe
 - VS Code Java Extension Pack for in-browser code navigation
 - `MAPBOX_TOKEN` auto-injected from the repo's Codespaces secret
 - All tests run: `mvn test` (79 green)
+
+### Play in the Browser (Replit — fallback for restricted GitHub accounts)
+
+Click the **Run on Replit** badge at the top of this README, or go to https://replit.com/new/github.com/Chloe-Ji/SiliconValleyTrail. Replit forks the repo into your Replit account, sets up Java 21 + Maven automatically via the committed `.replit` and `replit.nix` config, and runs `mvn exec:java` when you click **Run**.
+
+**Why Replit as a second option?** Replit supports GitHub, Google, and email sign-ins, so it works when a GitHub Enterprise org has disabled Codespaces.
+
+**Mapbox on Replit:** the `MAPBOX_TOKEN` Codespaces secret does not cross over — Replit has its own **Secrets** panel (🔒 icon in the left sidebar). To enable Mapbox features on Replit, add a secret named `MAPBOX_TOKEN` with a free token from https://account.mapbox.com/access-tokens/. Without it the game plays normally minus the traffic banners, same as the offline-mode behavior.
 
 ### Run Locally
 #### Prerequisites
