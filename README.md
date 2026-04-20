@@ -20,11 +20,13 @@ A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Vall
 
 That's it — you should see the main menu. The **Mapbox traffic-aware travel features are already configured**: `MAPBOX_TOKEN` is stored as a [repository Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-secrets-for-your-codespaces), so GitHub auto-injects it into your Codespace environment on launch. You may see a one-time prompt asking you to authorize the secret — click **Authorize**. No other token setup is needed.
 
+> **Note for enterprise / managed GitHub accounts:** some organizations (e.g. large employers on GitHub Enterprise) disable Codespaces at the org level as a policy. If clicking "Create codespace" is greyed out or errors with a permissions message, sign in with a **personal GitHub account** instead and try again — Codespaces works on any individual account with the [free tier](https://docs.github.com/en/billing/managing-billing-for-github-codespaces/about-billing-for-github-codespaces) (120 core-hours/month). Or skip the Codespaces path entirely and follow the [Run Locally](#run-locally) section below.
+
 **What's configured in the Codespace:**
 - Java 21 (Temurin) + Maven 3.9.6, pre-warmed with `mvn compile` on first boot
 - VS Code Java Extension Pack for in-browser code navigation
 - `MAPBOX_TOKEN` auto-injected from the repo's Codespaces secret
-- All tests run: `mvn test` (91 green)
+- All tests run: `mvn test` (89 green)
 
 ### Run Locally
 #### Prerequisites
