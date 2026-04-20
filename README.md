@@ -1,14 +1,34 @@
 # 🚀 Silicon Valley Trail
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Chloe-Ji/SiliconValleyTrail)
+
 A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Valley. Guide a scrappy startup team from San Jose to San Francisco to pitch for Series A funding — managing cash, morale, coffee, hype, compute credits, and bugs along the way.
 
 ## Quick Start
-### Prerequisites
+
+### Play in the Browser (Codespaces — no install required)
+
+Click the badge above, or on this repo click **Code → Codespaces → Create codespace on main**. A browser-based Java 21 + Maven environment launches in ~2 min. Then in the integrated terminal:
+
+```bash
+mvn exec:java
+```
+
+To enable the optional Mapbox features inside your Codespace, edit `.env` and paste a token:
+
+```
+MAPBOX_TOKEN=pk.your-token-here
+```
+
+Get a free token (no credit card) at https://account.mapbox.com/access-tokens/.
+
+### Run Locally
+#### Prerequisites
 
 - Java 21+
 - Maven 3.6+
 
-### Build & Run
+#### Build & Run
 
 ```bash
 git clone https://github.com/Chloe-Ji/SiliconValleyTrail.git
