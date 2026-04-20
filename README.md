@@ -17,17 +17,13 @@ A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Vall
    ```bash
    mvn exec:java
    ```
-3. **(Pre-configured) Mapbox token.** The repo maintainer has stored a `MAPBOX_TOKEN` as a [Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-secrets-for-your-codespaces), so the full traffic-aware travel features are enabled automatically when you open a Codespace. No setup needed. If the secret isn't available for your account, the game prints a red "Mapbox not configured" warning at startup and plays normally without the traffic banners.
-4. **(Optional) Use your own token instead.** Open `.env` in the Codespace editor and replace the line with:
-   ```
-   MAPBOX_TOKEN=pk.your-own-token
-   ```
-   Get a free token (no credit card) at https://account.mapbox.com/access-tokens/. Changes take effect on the next `mvn exec:java`.
+
+That's it — you should see the main menu. The **Mapbox traffic-aware travel features are already configured**: `MAPBOX_TOKEN` is stored as a [repository Codespaces secret](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-secrets-for-your-codespaces), so GitHub auto-injects it into your Codespace environment on launch. You may see a one-time prompt asking you to authorize the secret — click **Authorize**. No other token setup is needed.
 
 **What's configured in the Codespace:**
 - Java 21 (Temurin) + Maven 3.9.6, pre-warmed with `mvn compile` on first boot
 - VS Code Java Extension Pack for in-browser code navigation
-- Optional `MAPBOX_TOKEN` via a repository-level Codespaces secret
+- `MAPBOX_TOKEN` auto-injected from the repo's Codespaces secret
 - All tests run: `mvn test` (91 green)
 
 ### Run Locally
