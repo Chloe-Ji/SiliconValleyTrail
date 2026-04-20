@@ -50,6 +50,17 @@ Sign up for a free Mapbox token (no credit card) at https://account.mapbox.com/a
 
 The code resolves the token in two steps: first `System.getenv("MAPBOX_TOKEN")`, then a `MAPBOX_TOKEN=` line in `.env` at the project root. If neither is set, the game prints a one-line warning at startup and plays normally without the Mapbox features.
 
+### Offline Play
+
+The game is fully playable with no network access and no API tokens:
+
+- **Open-Meteo** failures drop to a randomized mock weather pool. Bad-weather gameplay penalties still fire; weather-conditional events still appear on matching mock conditions.
+- **Mapbox** is optional. Without a token (or offline) `MappingService` silently skips the heavy-traffic and long-leg effects and the game prints one warning at startup.
+- **Save/Load** uses local disk — no cloud dependency.
+- **Tests** use stubbed `HttpClient` and `@TempDir`, so `mvn test` passes offline.
+
+Try it: disable your network (or pull your Ethernet / toggle Wi-Fi off) and run `mvn exec:java`. You'll get one "Mapbox not configured" warning, a "Open-Meteo unavailable" notice the first turn, and an otherwise-identical playthrough.
+
 ### Run Tests
 
 ```bash

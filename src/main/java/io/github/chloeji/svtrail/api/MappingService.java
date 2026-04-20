@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * Calls the Mapbox Directions API to get real driving distance and
@@ -103,18 +104,20 @@ public class MappingService {
         }
     }
 
-    private int fetchDurationSeconds(Location from, Location to, String profile) throws Exception {
+    private int fetchDurationSeconds(Location from, Location to, String profile) throws IOException, InterruptedException {
         JsonObject route = firstRoute(callMapbox(from, to, profile));
         return route.get("duration").getAsInt();
     }
 
-    private double fetchDistanceMeters(Location from, Location to) throws Exception {
+    private double fetchDistanceMeters(Location from, Location to) throws IOException, InterruptedException {
         JsonObject route = firstRoute(callMapbox(from, to, "driving-traffic"));
         return route.get("distance").getAsDouble();
     }
 
-    private String callMapbox(Location from, Location to, String profile) throws Exception {
-        String url = String.format(
+    private String callMapbox(Location from, Location to, String profile) throws IOException, InterruptedException {
+        // Pin Locale.ROOT so non-English locales (e.g. de_DE) don't format
+        // doubles with comma separators and break the URL query.
+        String url = String.format(Locale.ROOT,
                 "https://api.mapbox.com/directions/v5/mapbox/%s/%f,%f;%f,%f"
                         + "?access_token=%s&geometries=geojson&overview=false",
                 profile,

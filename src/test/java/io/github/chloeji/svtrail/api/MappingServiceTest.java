@@ -2,6 +2,7 @@ package io.github.chloeji.svtrail.api;
 
 import io.github.chloeji.svtrail.model.Location;
 import io.github.chloeji.svtrail.model.RouteInfo;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -91,7 +92,7 @@ public class MappingServiceTest {
         RouteInfo info = service.getRouteInfo(SAN_JOSE, SANTA_CLARA);
 
         assertNotNull(info);
-        assertTrue(info.isHeavyTraffic(),
+        assertTrue(info.heavyTraffic(),
                 "20-minute traffic vs 10-minute free-flow should flag as heavy");
     }
 
@@ -103,7 +104,7 @@ public class MappingServiceTest {
         RouteInfo info = service.getRouteInfo(SAN_JOSE, SANTA_CLARA);
 
         assertNotNull(info);
-        assertFalse(info.isHeavyTraffic());
+        assertFalse(info.heavyTraffic());
     }
 
     // ==========================================
@@ -188,28 +189,26 @@ public class MappingServiceTest {
     }
 
     @Test
-    void resolveToken_prefersEnvVarOverDotEnv(@TempDir Path tempDir) throws IOException {
-        // Env var precedence can't be directly asserted here without mutating the
-        // process env, which JUnit doesn't make easy. Instead verify that with
-        // env var unset, resolveToken falls through to the dotenv file.
+    void resolveToken_fallsBackToDotEnvWhenEnvVarUnset(@TempDir Path tempDir) throws IOException {
+        // Skip cleanly when the dev has MAPBOX_TOKEN set in their shell; this
+        // test specifically verifies the env-var-unset fallback path.
+        String envValue = System.getenv("MAPBOX_TOKEN");
+        Assumptions.assumeTrue(envValue == null || envValue.isBlank(),
+                "Requires MAPBOX_TOKEN unset to exercise the .env fallback");
+
         Path dotenv = tempDir.resolve(".env");
         Files.writeString(dotenv, "MAPBOX_TOKEN=pk.from_dotenv\n");
-        String resolved = MappingService.resolveToken(dotenv);
-        // If MAPBOX_TOKEN is set in the test runner's env it would win; in CI or
-        // a clean shell it will be null/blank and the dotenv value wins.
-        if (System.getenv("MAPBOX_TOKEN") == null || System.getenv("MAPBOX_TOKEN").isBlank()) {
-            assertEquals("pk.from_dotenv", resolved);
-        } else {
-            assertEquals(System.getenv("MAPBOX_TOKEN"), resolved);
-        }
+        assertEquals("pk.from_dotenv", MappingService.resolveToken(dotenv));
     }
 
     @Test
     void resolveToken_returnsNullWhenNoSource(@TempDir Path tempDir) {
+        String envValue = System.getenv("MAPBOX_TOKEN");
+        Assumptions.assumeTrue(envValue == null || envValue.isBlank(),
+                "Requires MAPBOX_TOKEN unset to verify the null-result path");
+
         Path missing = tempDir.resolve("nonexistent.env");
-        if (System.getenv("MAPBOX_TOKEN") == null || System.getenv("MAPBOX_TOKEN").isBlank()) {
-            assertNull(MappingService.resolveToken(missing));
-        }
+        assertNull(MappingService.resolveToken(missing));
     }
 
     // ==========================================

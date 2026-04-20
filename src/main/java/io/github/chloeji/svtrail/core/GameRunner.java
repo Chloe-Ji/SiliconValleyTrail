@@ -171,8 +171,11 @@ public class GameRunner {
         RouteInfo info = mappingService.getRouteInfo(origin, next);
         if (info == null) return;
 
-        if (info.isHeavyTraffic()) {
-            System.out.println("\n🚦 Heavy traffic on the route — team stuck in the car.");
+        System.out.println();
+        if (info.heavyTraffic()) {
+            System.out.println("🚦 Heavy traffic on the route — "
+                    + info.trafficMinutes() + " min vs usual "
+                    + info.freeFlowMinutes() + " min. Team stuck in the car.");
             state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0, 0, 0));
         }
         if (info.miles() > LONG_LEG_MILES) {

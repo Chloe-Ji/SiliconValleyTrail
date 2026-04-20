@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -94,7 +95,9 @@ public class WeatherService {
 
     private WeatherData fetchFromOpenMeteo(Location location) {
         try {
-            String url = String.format(
+            // Pin Locale.ROOT so non-English locales don't render doubles with
+            // comma separators and break the URL.
+            String url = String.format(Locale.ROOT,
                     "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
                             + "&current=temperature_2m,weather_code&temperature_unit=fahrenheit",
                     location.latitude(), location.longitude()

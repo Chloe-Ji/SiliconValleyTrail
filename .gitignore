@@ -4,3 +4,4 @@ target/
 *.iml
 *.class
 docs/
+save.json

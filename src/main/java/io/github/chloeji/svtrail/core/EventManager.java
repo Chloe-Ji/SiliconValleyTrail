@@ -5,6 +5,7 @@ import io.github.chloeji.svtrail.model.Event;
 import io.github.chloeji.svtrail.model.WeatherData;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.function.Predicate;
 
@@ -21,12 +22,27 @@ import java.util.function.Predicate;
 public class EventManager {
     private static final int HOT_WEATHER_THRESHOLD_F = 80;
 
+    // Match tokens gate weather-conditional events against the human-readable
+    // condition string from WeatherService.describeWeatherCode. Kept as named
+    // constants so the predicates aren't coupled to raw magic strings.
+    private static final String THUNDER_TOKEN = "thunder";
+    private static final String FOG_TOKEN = "fog";
+
     private static final Predicate<WeatherData> IS_THUNDERSTORM =
-            w -> w.condition() != null && w.condition().toLowerCase().contains("thunder");
+            w -> containsToken(w.condition(), THUNDER_TOKEN);
     private static final Predicate<WeatherData> IS_HOT =
             w -> w.temperature() > HOT_WEATHER_THRESHOLD_F;
     private static final Predicate<WeatherData> IS_FOGGY =
-            w -> w.condition() != null && w.condition().toLowerCase().contains("fog");
+            w -> containsToken(w.condition(), FOG_TOKEN);
+
+    /**
+     * Case-insensitive substring match with {@link Locale#ROOT} so locales
+     * like Turkish (which lowercases {@code I} to {@code ı}) don't break the
+     * weather filter.
+     */
+    private static boolean containsToken(String condition, String token) {
+        return condition != null && condition.toLowerCase(Locale.ROOT).contains(token);
+    }
 
     private final List<Event> eventPool;
     private final Random random;
@@ -126,11 +142,12 @@ public class EventManager {
     }
 
     /**
-     * Picks one event at random from the unconditional events in the pool,
-     * using a clear-sky {@link WeatherData} as the default filter. Kept for
-     * tests and call sites that don't have weather context.
+     * Convenience overload equivalent to {@link #getRandomEvent(WeatherData)}
+     * called with a clear-sky {@link WeatherData} — hot, thunderstorm, and
+     * foggy conditional events are therefore ineligible. Kept for tests and
+     * call sites that don't have weather context.
      *
-     * @return a non-null {@link Event} drawn from the event pool
+     * @return a non-null {@link Event} drawn from the unconditional subset of the pool
      */
     public Event getRandomEvent() {
         return getRandomEvent(new WeatherData("Clear sky", 70, false));
