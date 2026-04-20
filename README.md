@@ -2,7 +2,7 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Chloe-Ji/SiliconValleyTrail)
 
-A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Valley. Guide a scrappy startup team from San Jose to San Francisco to pitch for Series A funding — managing cash, morale, coffee, hype, compute credits, and bugs along the way.
+A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Valley. Guide a scrappy startup team from San Jose to San Francisco to pitch for Series A funding — managing cash, morale, coffee, and compute credits along the way.
 
 ## Quick Start
 
@@ -26,7 +26,7 @@ That's it — you should see the main menu. The **Mapbox traffic-aware travel fe
 - Java 21 (Temurin) + Maven 3.9.6, pre-warmed with `mvn compile` on first boot
 - VS Code Java Extension Pack for in-browser code navigation
 - `MAPBOX_TOKEN` auto-injected from the repo's Codespaces secret
-- All tests run: `mvn test` (89 green)
+- All tests run: `mvn test` (79 green)
 
 ### Run Locally
 #### Prerequisites
@@ -47,7 +47,7 @@ mvn clean compile exec:java
 The game integrates two public APIs that change gameplay. Both degrade gracefully — the game runs fully offline or without any tokens.
 
 **1. Open-Meteo (weather) — no key required**
-The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather. Bad weather (rain, drizzle, snow, thunderstorm) adds $500 to travel cost and drops morale. Certain events (Power Outage, Foggy 101 Accident) are gated on live weather conditions and only fire when the weather matches. On network failure the game falls back to randomized mock weather.
+The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather. Bad weather (rain, drizzle, snow, thunderstorm) adds $500 to travel cost and drops morale. Two events (Power Outage, Foggy 101 Accident) are gated on live weather conditions and only fire when the weather matches. On network failure the game falls back to randomized mock weather.
 
 **2. Mapbox Directions (traffic & distance) — optional, requires free token**
 When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distance and traffic-aware duration between the two cities. Heavy traffic (>1.5× free-flow duration) triggers a morale dip. Without a token the game prints a one-line hint at startup and skips this feature.
@@ -111,29 +111,27 @@ You manage a startup team traveling through 10 real Silicon Valley locations. Ea
 
 ### Actions
 
-Each turn you pick one of these. **Options 1–5 advance the day** and each pay the fixed daily tax of **−$1,000 cash and −3 coffee** on top of their per-action effect; **6–8 are free** and do not advance the day.
+Each turn you pick one of these. **Options 1–3 advance the day** and each pay the fixed daily tax of **−$1,000 cash and −3 coffee** on top of their per-action effect; **4–6 are free** and do not advance the day.
 
-| # | Action | Effect (on top of the daily tax for 1–5) | Advances day? |
+| # | Action | Effect (on top of the daily tax for 1–3) | Advances day? |
 |---|--------|--------|---|
 | 1 | Travel to next location | Spend cash, morale drops (worse in bad weather). Only this action fires a random event on arrival. | ✅ |
-| 2 | Rest and recover | Morale restored significantly | ✅ |
-| 3 | Work on product | Uses compute credits, hype increases, bugs increase | ✅ |
-| 4 | Fix bugs | Bugs decrease, morale drops slightly | ✅ |
-| 5 | Marketing push | Costs $1,500, hype increases | ✅ |
-| 6 | Coffee boost | Uses coffee, morale boost (once per day) | ❌ |
-| 7 | Save game (explicit) | Writes `save.json` with a "💾 Game saved!" banner | ❌ |
-| 8 | Quit to menu | Returns to the main menu; **unsaved progress is lost** — save first if you want to resume | ❌ |
+| 2 | Rest and recover | Morale restored significantly (+30, capped at 100) | ✅ |
+| 3 | Work on product | With compute: spend 10 compute, earn $1,500 revenue. Without compute: build fails, morale drops 10. | ✅ |
+| 4 | Coffee boost | Spend 5 coffee, morale +15 (once per day) | ❌ |
+| 5 | Save game (explicit) | Writes `save.json` with a "💾 Game saved!" banner | ❌ |
+| 6 | Quit to menu | Returns to the main menu; **unsaved progress is lost** — save first if you want to resume | ❌ |
 
 ### Resources
 
+All four resources are outcome-affecting — there are no vanity counters.
+
 | Resource | Description |
 |----------|-------------|
-| 💰 Cash | Funds for travel and operations. Hits zero = bankruptcy (game over) |
+| 💰 Cash | Funds for travel, daily operations, and revenue from shipped product. Hits zero = bankruptcy (game over) |
 | 😊 Morale | Team happiness (0–100). Hits zero = burnout (game over) |
-| ☕ Coffee | Essential fuel. 2 days without daily supply = morale collapse |
-| 📢 Hype | Public interest (0–100). Higher hype boosts event rewards |
-| 💻 Compute | Cloud credits for building product |
-| 🐛 Bugs | Code defects. Accumulate when building product; fix them to keep the codebase healthy |
+| ☕ Coffee | Essential fuel. 2 days without daily supply forces morale to -30 = burnout |
+| 💻 Compute | Cloud credits. With compute, "Work on product" earns $1,500 cash per day. Once exhausted, the same action instead drops morale by 10 — so compute is a cash-earning buffer whose depletion pushes you toward burnout. |
 
 ### Win & Lose Conditions
 
@@ -142,12 +140,12 @@ Each turn you pick one of these. **Options 1–5 advance the day** and each pay 
 
 ### Saving and Exiting
 
-The game writes your progress to `save.json` (a single-slot save in the project root) **only when you explicitly save** — there is no auto-save. Use menu option **7** before quitting if you want to resume later.
+The game writes your progress to `save.json` (a single-slot save in the project root) **only when you explicitly save** — there is no auto-save. Use menu option **5** before quitting if you want to resume later.
 
 | Trigger | Effect |
 |---|---|
-| Menu option **7 — Save game** | Writes `save.json` and prints `💾 Game saved!` |
-| Menu option **8 — Quit to menu** | Returns to the main menu; **unsaved progress is lost** |
+| Menu option **5 — Save game** | Writes `save.json` and prints `💾 Game saved!` |
+| Menu option **6 — Quit to menu** | Returns to the main menu; **unsaved progress is lost** |
 | Main menu option **3 — Quit** | Exits the JVM; previously-saved progress remains on disk for the next launch |
 | **Ctrl+C** / terminal close / SSH disconnect | Abrupt exit; **unsaved progress is lost** |
 
@@ -173,10 +171,8 @@ from San Jose to San Francisco to pitch for Series A funding!
 Manage your resources wisely:
   💰 Cash - Don't run out!
   😊 Morale - Keep your team happy
-  ☕ Coffee - Essential fuel (2 days without = game over)
-  📢 Hype - Public interest in your startup
-  💻 Compute - Cloud credits for building product
-  🐛 Bugs - Keep them under control
+  ☕ Coffee - Essential fuel (2 days without = Morale drops dramatically)
+  💻 Compute Credits - Ship product for revenue; running out makes builds drop morale
 
 Good luck, founder!
 ============================================================
@@ -186,15 +182,15 @@ Press Enter to begin your journey...
 ============================================================
 Day 1 | San Jose
 ============================================================
-💰 Cash: $20,000 | 😊 Morale: 70/100 | ☕ Coffee: 50
-📢 Hype: 50/100 | 💻 Compute: 100 | 🐛 Bugs: 0
+💰 Cash: $20,000 | 😊 Morale: 70/100
+☕ Coffee: 50 | 💻 Compute: 100
 📍 Progress: 0% to San Francisco
 ============================================================
 🌤️  Weather: Sunny, 72°F
 
 ------------------------------------------------------------
 What will you do?
-Options 1–5 advance the day: -$1,000 cash, -3 ☕
+Options 1–3 advance the day: -$1,000 cash, -3 ☕
 ------------------------------------------------------------
 1. Travel to next location
    → 💰 spend $200 | 😊 morale drops slightly
@@ -202,20 +198,16 @@ Options 1–5 advance the day: -$1,000 cash, -3 ☕
 2. Rest and recover
    → 😊 morale restored significantly
 3. Work on product
-   → 💻 uses compute credits | 📢 hype increases | 🐛 bugs increase
-   → ⚠️ no compute: 😊 morale drops, build fails
-4. Fix bugs
-   → 🐛 bugs decrease | 😊 morale drops slightly
-5. Marketing push
-   → 💰 costs $1,500 | 📢 hype increases
+   → 💻 uses 10 compute | 💰 earn $1,500 revenue
+   → ⚠️ no compute: 😊 morale drops 10, build fails
 ------------------------------------------------------------
 Free actions (no day advance):
-6. Coffee boost (once per day)
+4. Coffee boost (once per day)
    → ☕ uses coffee | 😊 morale boost
-7. Save game
-8. Quit to menu
+5. Save game
+6. Quit to menu
 
-Enter choice (1-8): 1
+Enter choice (1-6): 1
 
 🚗 Your team hits the road...
 ✅ Arrived at Santa Clara!
@@ -224,7 +216,7 @@ Enter choice (1-8): 1
 📰 EVENT: VC Pitch Opportunity — A VC firm wants to hear your pitch!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 1. Prepare and pitch (risky but big reward)
-   💰+8000 😊+10 ☕-5 📢+15
+   💰+8000 😊+10 ☕-5
 2. Decline politely (safe)
 
 Enter choice (1-2): 1
@@ -241,7 +233,7 @@ src/main/java/io/github/chloeji/svtrail/
 ├── Main.java                  # Entry point
 ├── model/
 │   ├── StartupState.java      # Game state and resource management
-│   ├── Location.java          # Location record (name, miles, lat/lon)
+│   ├── Location.java          # Location record (name, milesFromStart, lat/lon)
 │   ├── Event.java             # Event record with two choices + optional weather predicate
 │   ├── Effects.java           # Resource change bundle
 │   ├── WeatherData.java       # Weather record
@@ -270,11 +262,11 @@ src/main/java/io/github/chloeji/svtrail/
 ## Design Notes
 ### Game Loop & Balance
 
-Each turn follows: Display Status → Show Weather → Player Chooses Action → Resolve Action → (on Travel only) Trigger Random Event → Check Win/Lose.
+The game loop is nested: the outer iteration represents one day and the inner iteration represents actions within that same day. Weather is fetched once at the start of each outer iteration (so Coffee Boost and Save don't re-hit the API), and the inner loop uses `state.getCurrentDay() == dayBefore` as the natural "did the day advance" signal. Each turn follows: Display Status → Show Weather → Player Chooses Action → Resolve Action → (on Travel only) Trigger Random Event → Check Win/Lose.
 
-Random events fire **only on arrival at a new city** — i.e. after a Travel action. Rest, Build, Fix Bugs, and Marketing resolve their effect and end the day without firing an event. This matches the spec's "event at each location after movement" rule and prevents players from farming positive events by resting in place.
+Random events fire **only on arrival at a new city** — i.e. after a Travel action. Rest and Build resolve their effect and end the day without firing an event. This matches the spec's "event at each location after movement" rule and prevents players from farming positive events by resting in place.
 
-Balance is built around resource tension. Cash drains daily ($1,000 fixed expense + action costs). Coffee depletes automatically (3 per day) and must be managed — 2 days without triggers morale collapse. Building product increases hype but adds bugs. Marketing costs cash. Every action has a tradeoff, forcing strategic decisions.
+Balance is built around resource tension across four outcome-affecting resources. The starting pile ($20,000 cash, 70 morale, 50 coffee, 100 compute) gives the player roughly 10–15 days of runway before the daily fixed expense ($1,000) forces a real loss, so bankruptcy and burnout are both reachable in a normal 10-stop run. Coffee depletes automatically (3 per day) and must be managed — 2 days without triggers morale collapse. Work on product is a compute-for-cash converter while compute lasts (+$1,500 revenue per build); once compute is exhausted the same action becomes a morale sink (-10), pushing the player toward burnout. Every action is a tradeoff, so there is no dominant strategy — you have to balance restoring morale (Rest), earning cash (Build), and moving forward (Travel).
 
 Coffee boost does not consume a turn (limited to once per day), allowing tactical use alongside other actions. Save and quit also do not consume a turn.
 
@@ -296,26 +288,26 @@ Why this API: The game needed at least one external API and Mapping/Routing was 
 
 How it affects gameplay: On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` for current conditions, `driving` for the free-flow baseline). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit. This effect stacks with the base travel cost and the weather penalty.
 
-Token handling: `MappingService.resolveToken()` checks two sources in order — the `MAPBOX_TOKEN` environment variable (standard for CI and shells) and then a `MAPBOX_TOKEN=` entry inside a `.env` file at the project root (the convention most Node/Python/Ruby devs expect). `.env` is in `.gitignore`, so the token never lands in source control. When both sources are missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line red warning at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
+Token handling: `MappingService.resolveToken()` checks two sources in order — the `MAPBOX_TOKEN` environment variable (standard for CI and shells) and then a `MAPBOX_TOKEN=` entry inside a `.env` file at the project root (the convention most Node/Python/Ruby devs expect). The `.env` file is committed as a blank template so fresh clones see it; real tokens are kept out of source control via `git update-index --skip-worktree .env` (see the Setup section). When both sources are missing or blank, `MappingService.isConfigured()` returns false; `GameRunner.start` prints a one-line red warning at launch and the Mapbox code path short-circuits. No network is contacted and the game runs with the base travel cost. Any network / JSON / non-2xx failure is caught and degraded to the same "no Mapbox" code path.
 
 ### Data Modeling
 
 - Records (`Location`, `Event`, `Effects`, `WeatherData`, `RouteInfo`) for immutable data structures, leveraging Java's record feature for concise, readable code.
-- `StartupState` is the only mutable class. Mutation is funneled through dedicated action methods (`rest()`, `buildProduct()`, `travelToNextStop()`, `fixBugs()`, `marketingPush()`, `coffeeBoost()`, `applyEventEffects()`). Each method applies inline clamping so morale and hype stay within `[0, 100]` and coffee/compute/bugs never go negative. Cash is intentionally left unclamped so negative balances can trigger the bankruptcy game-over condition.
-- `Effects` record bundles six resource changes (cash, morale, compute, coffee, hype, bugs) into a single object, used by both the event system and the display layer. This avoids passing loose integers and makes the code self-documenting.
-- Events contain a description, two choice labels, two `Effects` objects — one per choice — and an optional `Predicate<WeatherData>` condition. Unconditional events have `null` for the predicate. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today") are applied automatically without player input. The pool currently contains **7 events**: 5 unconditional (4 with choices, 1 quiet day) plus 2 weather-conditional.
+- `StartupState` is the only mutable class. Mutation is funneled through dedicated action methods (`rest()`, `buildProduct()`, `travelToNextStop()`, `coffeeBoost()`, `applyEventEffects()`). Each method caps morale at 100 and keeps coffee/compute non-negative. Cash and morale are intentionally left unclamped on the low side so negative values trigger the bankruptcy and burnout game-over conditions.
+- `Effects` record bundles four resource changes (cash, morale, compute, coffee) into a single object, used by both the event system and the heavy-traffic penalty in `GameRunner`. This avoids passing loose integers and makes the code self-documenting.
+- Events contain a description, two choice labels, two `Effects` objects — one per choice — and an optional `Predicate<WeatherData>` condition. Unconditional events have `null` for the predicate. This enables risk-vs-reward decisions at every event. Events with `null` choices (e.g., "Nothing eventful today") are applied automatically without player input. The pool currently contains **7 events**: 5 unconditional (4 with choices, 1 quiet day) plus 2 weather-conditional (Power Outage on thunderstorm, Foggy 101 Accident on fog).
 - `RouteInfo` captures the single leg result from `MappingService` (miles, traffic-aware minutes, free-flow minutes, heavy-traffic flag). It is never persisted — consumed and discarded inside `GameRunner.travel`.
-- Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. Saves happen only on the explicit menu option 7 (matches the spec's sample flow); there is no auto-save.
+- Save/Load via Gson serialization of `StartupState` to `save.json`. Single save slot — sufficient for a single-player CLI game. Saves happen only on the explicit menu option 5 (matches the spec's sample flow); there is no auto-save.
 
 ### Error Handling
 
 - Open-Meteo timeout/failure: caught in try-catch, falls back to mock weather with a warning message. Game never crashes due to network issues.
-- Mapbox timeout/failure or missing token: `MappingService.getRouteInfo` returns `null`. The travel action silently skips the traffic effect and applies base travel cost only. A single startup hint informs the user when the token is absent.
+- Mapbox timeout/failure or missing token: `MappingService.getRouteInfo` returns `null`. The travel action silently skips the heavy-traffic effect and applies base travel cost only. A single startup hint informs the user when the token is absent.
 - Invalid user input: `InputHandler` loops with a clear error message until a valid number in range is entered.
 - Missing save file: `SaveManager.load()` returns null, and `GameRunner` stays on the main menu with a message.
-- Resource boundaries: inline clamping in each mutation method prevents morale and hype from exceeding 0–100, and coffee/compute/bugs from going negative. Cash is intentionally not clamped — negative cash triggers the `isBankrupt()` game-over condition.
+- Resource boundaries: inline caps in each mutation method keep morale at most 100 and prevent coffee/compute from going negative. Cash and morale are deliberately left unclamped on the low side — negative cash triggers `isBankrupt()` and negative morale triggers `isBurnOut()`.
 - Both APIs down simultaneously: both degrade independently; the game uses randomized mock weather, skips Mapbox, and plays exactly like the offline version.
-- Ctrl+C mid-turn: JVM exits immediately; any unsaved progress is lost. Players should use menu option 7 to save before exiting if they want to resume.
+- Ctrl+C mid-turn: JVM exits immediately; any unsaved progress is lost. Players should use menu option 5 to save before exiting if they want to resume.
 
 ### Tradeoffs & "If I Had More Time"
 
@@ -326,13 +318,13 @@ Token handling: `MappingService.resolveToken()` checks two sources in order — 
 - Deployment beyond Codespaces: Codespaces is the current browser-playable path. With more time, two richer deployment models are natural next steps:
   - **Browser-native terminal** — wrap `GameRunner` in a Spring Boot or Javalin server with an `xterm.js` front-end over WebSockets. Keystrokes pipe into `InputHandler`; stdout streams back to the browser. Session state stays in-memory per connection. Deploy to Fly.io, Render, or Railway. Preserves the CLI feel without requiring any install or Codespaces. Roughly 2–3 days of work.
   - **Full web service** — stateless workers fronted by a load balancer; `StartupState` lives in Postgres (durable) + Redis (active session, API response cache). Game logic exposed as REST endpoints (`POST /games/{id}/actions`). Horizontal scale, multi-region deployment, SLO-driven alerting. This is the architecture to reach for at ~1M DAU, where Open-Meteo and Mapbox rate limits become the primary bottleneck and caching external APIs (keyed by `(city, hour)` with a 1-hour TTL) is the single highest-leverage fix.
-- If more time: Add a scoring system based on final resources and days taken, implement difficulty levels, add persistent high scores, and integrate a news/trends API (e.g., Hacker News Algolia) for hype-related events tied to real trending topics. The `MappingService` interface would also swap cleanly to Google Maps Directions by changing the URL and JSON path — handy if you already have a billing-enabled GCP project.
+- If more time: Add a scoring system based on final resources and days taken, implement difficulty levels, add persistent high scores, and integrate a news/trends API (e.g., Hacker News Algolia) for events tied to real trending topics. The `MappingService` interface would also swap cleanly to Google Maps Directions by changing the URL and JSON path — handy if you already have a billing-enabled GCP project.
 
 ### Tests
 
-Unit tests cover core game mechanics — 89 tests total across four classes:
+Unit tests cover core game mechanics — 79 tests total across four classes:
 
-- **StartupStateTest**: Resource mutations, boundary conditions (clamp behavior), game-over triggers (bankrupt, burnout), coffee withdrawal logic, and daily settlement. (42 tests)
+- **StartupStateTest**: Resource mutations, boundary conditions (clamp behavior), game-over triggers (bankrupt, burnout), coffee withdrawal logic, and daily settlement across the four resources. (32 tests)
 - **EventManagerTest**: Random event generation, effect application, null-choice event handling, and weather-conditional filtering (verifies thunderstorm and foggy events fire only under matching conditions and never in clear skies). (14 tests)
 - **RouteMapTest**: Location retrieval, destination detection, progress calculation, distance between stops. (12 tests)
 - **MappingServiceTest**: Token configuration detection, short-circuit when unconfigured, JSON parsing, heavy-traffic flagging (ratio > 1.5), graceful degradation on network failure, non-2xx status, malformed JSON, and empty routes, plus the two-tier token resolution (env var → `.env` file) — comments, quoted values, missing key, and missing file. Uses an in-test `HttpClient` stub and JUnit's `@TempDir` so the tests run offline and don't touch the real `.env`. (21 tests)

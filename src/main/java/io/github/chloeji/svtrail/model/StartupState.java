@@ -244,8 +244,6 @@ public class StartupState {
         computeCredits += effects.compute();
         coffee += effects.coffee();
 
-        // Clamp back to valid ranges. Cash is intentionally left unclamped so
-        // a negative balance can trigger the bankruptcy game-over condition.
         morale = Math.min(MAX_MORALE, morale);
         computeCredits = Math.max(0, computeCredits);
         coffee = Math.max(0, coffee);
