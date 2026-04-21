@@ -172,6 +172,15 @@ Enter choice (1-6): 1
 Enter choice (1-2): 1
 ```
 
+## Beyond the Brief
+
+Features built on top of the core requirements:
+
+- **Live daily dashboard.** Each turn opens with a status header showing cash, morale, coffee, compute, progress-to-SF percentage, and current weather — all in one glance, so the player can plan without hunting through menus.
+- **Upfront reward/penalty disclosure.** Every action and event choice lists its exact resource impact inline in the menu (e.g., `-$1,000 cash, -3 coffee` on the daily tax line, `+$8000 cash, +10 morale, -5 coffee` on event choices). No hidden costs — players always know what a choice will do before confirming.
+- **Once-per-day coffee boost.** A free tactical action (#4) that spends 5 coffee for +15 morale, rate-limited to one use per day. Adds a meaningful short-term lever: burn coffee now for a morale lift, or hold it for a rougher day.
+- **Two external APIs blended with probabilistic gameplay.** Open-Meteo (weather) and Mapbox (traffic) both feed live data into the game — bad weather raises travel cost and gates two conditional events, and heavy traffic is applied via a probabilistic roll so the feature stays lively whether the token is configured or not, and whether the player runs at rush hour or midnight.
+
 ## Architecture
 
 All sources live under the `io.github.chloeji.svtrail` package.
@@ -263,13 +272,15 @@ Token resolution checks `System.getenv("MAPBOX_TOKEN")` first, then a `MAPBOX_TO
 
 ### Tradeoffs & "If I Had More Time"
 
-- CLI over GUI: Prioritized game logic, clean architecture, and separation of concerns over visual polish. The `DisplayManager` class isolates all print logic, so a GUI layer could replace it without touching game logic.
-- Single save slot: Sufficient for a single-player game. Multi-slot support would only require parameterizing the save filename (e.g., `save_{slot}.json`).
-- Event pool size: Currently 7 events. With more time, expand to 20+ including events conditional on resource levels (e.g., "team mutiny" when morale < 30) and journey position (e.g., "pre-pitch jitters" on the last leg).
-- Deployment: the game is a CLI app — reviewers clone and run locally. With more time, two natural paths:
-  - **Browser-native terminal** — wrap `GameRunner` in a Javalin or Spring Boot server with an `xterm.js` front-end over WebSockets; session state stays in-memory per connection. Deploy to Fly.io/Render/Railway; ~2–3 days of work.
-  - **Full web service** — stateless workers behind a load balancer, `StartupState` in Postgres (durable) + Redis (active session, API cache), game logic as REST endpoints (`POST /games/{id}/actions`). This is the shape to reach at ~1M DAU, where Open-Meteo and Mapbox rate limits become the bottleneck and caching external APIs (keyed by `(city, hour)` with a 1-hour TTL) is the highest-leverage fix.
-- Other extensions: scoring based on final resources and days taken, difficulty levels, persistent high scores, and a news/trends API (e.g., Hacker News Algolia) for events tied to real topics. `MappingService` would also swap cleanly to Google Maps Directions by changing the URL and JSON path.
+**Tradeoffs:**
+
+- **Mapbox: probability over raw signal.** The heavy-traffic penalty doesn't follow Mapbox's output exactly — it's mediated by a probabilistic roll. Upside: the feature stays alive even when Mapbox is unreachable or the player runs off-peak, so the game never goes quiet on this dimension. Downside: real-world traffic data is partially ignored. I took this tradeoff because the probabilistic roll makes the game livelier and more varied across sessions.
+- **CLI over GUI:** Prioritized game logic, clean architecture, and separation of concerns over visual polish. The `DisplayManager` class isolates all print logic, so a GUI layer could replace it without touching game logic.
+
+**If I had more time:**
+
+- **Richer win/lose model.** Today only cash and morale determine the outcome. Success should also depend on things like how hot the startup's topic is, the quality of the final product, and whether the build ships with bugs. I'd expand `StartupState` and the end-of-game evaluation to reflect these dimensions.
+- **Random events with real weight.** Events currently nudge resources but rarely swing the run. I'd tune effects so each event meaningfully pushes the game toward winning or losing — making the player's choice a decision that actually matters.
 
 ### Tests
 
