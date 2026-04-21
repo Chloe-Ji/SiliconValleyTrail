@@ -123,8 +123,17 @@ public class GameRunner {
             // the day advances (travel / rest / work / fix / marketing) or
             // the game ends. Coffee boost and Save keep us in the inner loop
             // so the player can stack them with another action on the same day.
+            //
+            // After a coffee boost we skip the next status reprint: the boost
+            // message already prints the updated coffee/morale inline, and
+            // re-rendering the full day header right after it reads as a new
+            // day starting, which confused players.
+            boolean skipNextStatus = false;
             while (state.getCurrentDay() == dayBefore && !state.isGameOver()) {
-                display.printDayStatus(state, current, weather, progress);
+                if (!skipNextStatus) {
+                    display.printDayStatus(state, current, weather, progress);
+                }
+                skipNextStatus = false;
                 display.printActionMenu();
 
                 int choice = inputHandler.getUserChoice(1, 6);
@@ -132,7 +141,10 @@ public class GameRunner {
                     case 1 -> travel(weather);
                     case 2 -> rest();
                     case 3 -> workOnProduct();
-                    case 4 -> boostEnergy();
+                    case 4 -> {
+                        boostEnergy();
+                        skipNextStatus = true;
+                    }
                     case 5 -> saveManager.save(state);
                     case 6 -> {
                         return;
@@ -196,6 +208,10 @@ public class GameRunner {
             System.out.println("\n❌ Already had extra coffee today!");
         } else if (state.coffeeBoost()) {
             System.out.println("\n🍵 Extra coffee! Team feels energized!");
+            // Inline the updated resources so the player sees the boost's
+            // effect without waiting for the next day's status header.
+            System.out.println("   ☕ Coffee: " + state.getCoffee()
+                    + " | 😊 Morale: " + state.getMorale() + "/100");
         } else {
             System.out.println("\n❌ Not enough coffee for a boost!");
         }

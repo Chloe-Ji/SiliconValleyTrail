@@ -77,7 +77,8 @@ public class DisplayManager {
         System.out.println("============================================================");
         System.out.println("🌤️  Weather: " + weather.condition() + ", " + weather.temperature() + "°F");
         if (weather.isBadWeather()) {
-            System.out.println("   Bad weather may slow your progress!");
+            System.out.println("   ⚠️  Bad weather!");
+            System.out.println(hint("   -> travel today: -$700 cash, -20 morale (vs -$200, -5 in clear weather)"));
         }
     }
 
