@@ -24,8 +24,8 @@ The game integrates two public APIs. Both degrade gracefully — the game runs o
 **1. Open-Meteo (weather) — no key required**
 The game calls the free [Open-Meteo](https://open-meteo.com/) API for real-time weather. Bad weather (rain, drizzle, snow, thunderstorm) adds $500 to travel cost and drops morale. Two events (Power Outage, Foggy 101 Accident) are gated on live weather conditions and only fire when the weather matches. On network failure the game falls back to randomized mock weather.
 
-**2. Mapbox Directions (traffic & distance) — optional, requires free token**
-When a `MAPBOX_TOKEN` is configured, each travel leg fetches real driving distance and traffic-aware duration between the two cities. Heavy traffic (>1.5× free-flow duration) triggers a morale dip. Without a token the game prints a one-line hint at startup and skips this feature.
+**2. Mapbox Directions (traffic) — optional, requires free token**
+When a `MAPBOX_TOKEN` is configured, each travel leg fetches the traffic-aware driving duration between the two cities (two calls: `driving-traffic` vs. `driving`). If current traffic is >1.5× the free-flow baseline, the leg triggers a morale dip. Without a token the game prints a one-line hint at startup and skips this feature — there is no mock fallback for Mapbox, it just disables cleanly.
 
 **Setting up Mapbox (optional):**
 
@@ -51,7 +51,7 @@ Sign up for a free Mapbox token (no credit card) at https://account.mapbox.com/a
 
 Resolution order: `System.getenv("MAPBOX_TOKEN")` first, then a `MAPBOX_TOKEN=` line in `.env`. If neither is set, the game prints one warning at startup and plays normally.
 
-**Offline play:** Open-Meteo failures fall back to a randomized mock pool, Mapbox silently skips when unconfigured or unreachable, save/load uses local disk, and tests stub `HttpClient` so `mvn test` passes offline.
+**Running with mocks / offline:** the game runs fully offline out of the box. Open-Meteo failures fall back to a randomized mock weather pool automatically; Mapbox has no mock — it silently disables itself when unconfigured or unreachable. Save/load uses local disk, and tests stub `HttpClient` so `mvn test` passes offline.
 
 ### Run Tests
 
@@ -112,6 +112,9 @@ Progress is written to `save.json` only when you explicitly save; there is no au
 On next launch, pick **Load Game** to resume from your last save, or **New Game** to start fresh.
 
 ### Example Session
+
+The live UI renders action-hint lines in cyan italics; they're shown here as plain text for readability.
+
 ```
 ============================================================
 SILICON VALLEY TRAIL - Main Menu
@@ -119,7 +122,6 @@ SILICON VALLEY TRAIL - Main Menu
 1. New Game
 2. Load Game
 3. Quit
-
 Enter choice (1-3): 1
 
 ============================================================
@@ -133,34 +135,40 @@ Good luck, founder!
 ============================================================
 Day 1 | San Jose
 ============================================================
-💰 Cash: $20,000 | 😊 Morale: 70/100
+💰 Cash: $20000 | 😊 Morale: 70/100
 ☕ Coffee: 50 | 💻 Compute: 100
 📍 Progress: 0% to San Francisco
 ============================================================
-🌤️  Weather: Sunny, 72°F
+🌤️  Weather: Clear sky, 72°F
 
 ------------------------------------------------------------
 What will you do?
+Options 1–3 advance the day: -$1,000 cash, -3 ☕
 ------------------------------------------------------------
 1. Travel to next location
+   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)
 2. Rest and recover
+   -> morale boost 30
 3. Work on product
+   -> uses 10 compute credits | earn $1500 revenue (no compute credits: morale drops 10)
+------------------------------------------------------------
+Free actions (no day advance):
 4. Coffee boost (once per day)
+   -> uses 5 coffee | morale boost 15
 5. Save game
 6. Quit to menu
-
 Enter choice (1-6): 1
 
 🚗 Your team hits the road...
 ✅ Arrived at Santa Clara!
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 📰 EVENT: VC Pitch Opportunity — A VC firm wants to hear your pitch!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-1. Prepare and pitch (risky but big reward)
-   💰+8000 😊+10 ☕-5
-2. Decline politely (safe)
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+🌟Choice 1: Prepare and pitch (risky but big reward)
+   -> +$8000 cash, +10 morale, -5 coffee
+🌟Choice 2: Decline politely (safe)
+   -> no resource change
 Enter choice (1-2): 1
 ```
 
@@ -177,7 +185,7 @@ src/main/java/io/github/chloeji/svtrail/
 │   ├── Event.java             # Event record with two choices + optional weather predicate
 │   ├── Effects.java           # Resource change bundle
 │   ├── WeatherData.java       # Weather record
-│   └── RouteInfo.java         # Distance/duration result from MappingService
+│   └── RouteInfo.java         # Traffic-aware duration result from MappingService
 ├── core/
 │   ├── GameRunner.java        # Main game loop and action handling
 │   ├── RouteMap.java          # 10 real locations from San Jose to SF
@@ -218,7 +226,7 @@ Fallback: on network failure or non-2xx response, `WeatherService` returns rando
 
 ### Why Mapbox Directions & How It Affects Gameplay
 
-Mapping/Routing was a natural fit for the second API. Mapbox returns real driving distance and a traffic-aware duration between two lat/lon points, which maps directly to the "stuck in traffic" gameplay hook.
+Mapping/Routing was a natural fit for the second API. Mapbox returns a traffic-aware driving duration between two lat/lon points, which maps directly to the "stuck in traffic" gameplay hook.
 
 On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` and `driving`). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit, stacking with the base travel cost and the weather penalty.
 
@@ -230,7 +238,7 @@ Token resolution checks `System.getenv("MAPBOX_TOKEN")` first, then a `MAPBOX_TO
 - `StartupState` is the only mutable class. Mutation is funneled through dedicated action methods (`rest()`, `buildProduct()`, `travelToNextStop()`, `coffeeBoost()`, `applyEventEffects()`), each capping morale at 100 and keeping coffee/compute non-negative.
 - `Effects` bundles four resource changes (cash, morale, compute, coffee) into one object, used by both the event system and the heavy-traffic penalty in `GameRunner`.
 - Events hold a description, two choice labels, two `Effects` objects, and an optional `Predicate<WeatherData>` condition. Events with `null` choices (e.g., "Nothing eventful today") apply automatically. The pool has **7 events**: 5 unconditional (4 with choices, 1 quiet day) plus 2 weather-conditional (Power Outage on thunderstorm, Foggy 101 Accident on fog).
-- `RouteInfo` captures one leg's result (miles, traffic-aware minutes, free-flow minutes, heavy-traffic flag). Consumed and discarded inside `GameRunner.travel`; never persisted.
+- `RouteInfo` captures one leg's result (traffic-aware minutes, free-flow minutes, heavy-traffic flag). Consumed and discarded inside `GameRunner.travel`; never persisted.
 - Save/Load serializes `StartupState` to `save.json` via Gson. Single save slot, no auto-save.
 
 ### Error Handling
@@ -264,10 +272,11 @@ Unit tests cover core game mechanics — 79 tests total across four classes:
 
 ## AI Usage
 
-AI assistance was used on this project for:
+AI assistance was used for:
 
-- **Boilerplate generation**: JavaDoc comments, unit test assertion scaffolding, and constructors for test stubs.
-- **Static data lookup**: the 10-city lat/lon list, WMO weather-code → human-description mappings, and Mapbox Directions API URL format.
-- **Prose polish**: README phrasing and the design-notes section.
+- Comments and JavaDoc throughout the codebase.
+- Documentation — README phrasing and the Design Notes section.
+- Git workflow prose — commit messages and pull request descriptions.
+- Some unit tests, notably the `HttpClient` test doubles in `MappingServiceTest`.
 
-I designed the package architecture, wrote the core game loop and `StartupState` mutation logic, chose the trade-offs (single mutable state class, records for everything else, event-only-after-travel rule, graceful API fallback strategy), wrote the weather-conditional event predicate design, and reviewed every AI suggestion before accepting it.
+I am responsible for everything else. AI also served as a sounding board on a few design choices.
