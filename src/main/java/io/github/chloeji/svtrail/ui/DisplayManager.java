@@ -96,7 +96,7 @@ public class DisplayManager {
         System.out.println(hint("Options 1–3 advance the day: -$1,000 cash, -3 ☕"));
         System.out.println("------------------------------------------------------------");
         System.out.println("1. Travel to next location");
-        System.out.println(hint("   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)"));
+        System.out.println(hint("   -> spend 200 | morale drops 5 (bad weather: spend 700 | morale drops 20)"));
         System.out.println("2. Rest and recover");
         System.out.println(hint("   -> morale boost 30"));
         System.out.println("3. Work on product");

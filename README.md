@@ -148,7 +148,7 @@ What will you do?
 Options 1–3 advance the day: -$1,000 cash, -3 ☕
 ------------------------------------------------------------
 1. Travel to next location
-   -> spend 200 | morale drops 5 (bad weather: spend 500 | morale drops 15)
+   -> spend 200 | morale drops 5 (bad weather: spend 700 | morale drops 20)
 2. Rest and recover
    -> morale boost 30
 3. Work on product
