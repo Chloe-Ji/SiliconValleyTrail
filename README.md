@@ -2,6 +2,8 @@
 
 A replayable CLI game inspired by Oregon Trail, set in the heart of Silicon Valley. Guide a scrappy startup team from San Jose to San Francisco to pitch for Series A funding — managing cash, morale, coffee, and compute credits along the way.
 
+🎥 **Gameplay demo:** https://youtu.be/tjmG--LsHUc
+
 ## Quick Start
 
 ### Prerequisites
