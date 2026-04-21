@@ -205,9 +205,11 @@ public class GameRunner {
         Event event = eventManager.getRandomEvent(weather);
         display.printEventDescription(event);
 
-        // Null choice labels indicate a "nothing happens" event — apply its
-        // (typically zero) effects silently rather than prompting the player.
+        // Null choice labels indicate a "nothing happens" event — show the
+        // effect hint (skipped when all zero) and apply the effects without
+        // prompting the player.
         if (event.choice1() == null) {
+            display.printEventEffect(event.choice1Effects());
             state.applyEventEffects(event.choice1Effects());
         } else {
             display.printEventChoices(event);

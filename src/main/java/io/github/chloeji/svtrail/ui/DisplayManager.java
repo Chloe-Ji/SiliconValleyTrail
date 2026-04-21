@@ -1,5 +1,6 @@
 package io.github.chloeji.svtrail.ui;
 
+import io.github.chloeji.svtrail.model.Effects;
 import io.github.chloeji.svtrail.model.Event;
 import io.github.chloeji.svtrail.model.Location;
 import io.github.chloeji.svtrail.model.StartupState;
@@ -12,10 +13,10 @@ import io.github.chloeji.svtrail.model.WeatherData;
  */
 public class DisplayManager {
 
-    // Dim + italic + gray — used to de-emphasize the cost/effect hints under
-    // each menu option so the action labels stand out. Supported in most
-    // modern terminals; legacy consoles fall back to plain text.
-    private static final String ANSI_HINT = "\u001B[2;3;90m";
+    // Italic + cyan — used for the cost/effect hints under each menu option
+    // and event choice. Cyan reads clearly on both light and dark terminals
+    // without competing with the default-color action labels.
+    private static final String ANSI_HINT = "\u001B[3;36m";
     private static final String ANSI_RESET = "\u001B[0m";
 
     private static String hint(String text) {
@@ -119,13 +120,55 @@ public class DisplayManager {
     }
 
     /**
-     * Prints the two choice labels for a branching event.
+     * Prints the two choice labels for a branching event, each followed by
+     * a hint line summarizing its effect on the startup's resources — same
+     * visual pattern as the per-day action menu so the player can weigh
+     * choices without guessing.
      *
      * @param event the event whose choices should be displayed
      */
     public void printEventChoices(Event event) {
         System.out.println("🌟Choice 1: " + event.choice1());
+        System.out.println(hint("   -> " + formatEffects(event.choice1Effects())));
         System.out.println("🌟Choice 2: " + event.choice2());
+        System.out.println(hint("   -> " + formatEffects(event.choice2Effects())));
+    }
+
+    /**
+     * Prints the effect hint for an automatic (no-choice) event, so the
+     * player sees the resource impact of a passive event the same way they
+     * see it for actions and branching events. Skips output when the event
+     * has no resource impact to avoid visual noise on quiet days.
+     *
+     * @param effects the resource deltas the event will apply
+     */
+    public void printEventEffect(Effects effects) {
+        if (isNoOp(effects)) return;
+        System.out.println(hint("   -> " + formatEffects(effects)));
+    }
+
+    private static boolean isNoOp(Effects e) {
+        return e.cash() == 0 && e.morale() == 0 && e.compute() == 0 && e.coffee() == 0;
+    }
+
+    private static String formatEffects(Effects e) {
+        StringBuilder sb = new StringBuilder();
+        appendCashDelta(sb, e.cash());
+        appendDelta(sb, e.morale(), "morale");
+        appendDelta(sb, e.compute(), "compute");
+        appendDelta(sb, e.coffee(), "coffee");
+        return sb.length() == 0 ? "no resource change" : sb.toString();
+    }
+
+    private static void appendCashDelta(StringBuilder sb, int value) {
+        if (value == 0) return;
+        sb.append(value > 0 ? "+$" : "-$").append(Math.abs(value)).append(" cash");
+    }
+
+    private static void appendDelta(StringBuilder sb, int value, String name) {
+        if (value == 0) return;
+        if (sb.length() > 0) sb.append(", ");
+        sb.append(value > 0 ? "+" : "").append(value).append(" ").append(name);
     }
 
     /**
