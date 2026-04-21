@@ -25,12 +25,13 @@ import java.util.Locale;
  *   <li>the {@code MAPBOX_TOKEN} environment variable (preferred — standard for CI and shells);</li>
  *   <li>a {@code MAPBOX_TOKEN=} line inside a {@code .env} file at the project
  *       root (convenience for developers and reviewers who prefer the dotenv
- *       workflow — this file is git-ignored).</li>
+ *       workflow — the repo ships an empty placeholder at that path).</li>
  * </ol>
  * When both are missing or blank the service disables itself —
  * {@link #getRouteInfo} returns {@code null} without making any network call
- * and the game falls back to the flat base travel cost. This keeps the code
- * path fully playable for anyone who clones the repo without a Mapbox account.
+ * and the game skips the traffic-aware features (no mock fallback). This keeps
+ * the code path fully playable for anyone who clones the repo without a Mapbox
+ * account.
  * <p>
  * Two HTTP calls are issued per leg: one on the {@code driving-traffic}
  * profile (current traffic) and one on {@code driving} (free-flow baseline).
