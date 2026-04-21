@@ -12,6 +12,8 @@ import io.github.chloeji.svtrail.ui.DisplayManager;
 import io.github.chloeji.svtrail.util.InputHandler;
 import io.github.chloeji.svtrail.util.SaveManager;
 
+import java.util.Random;
+
 /**
  * Top-level game controller. Wires together route, events, weather, input,
  * display, and persistence, and drives the main menu and per-day game loop.
@@ -23,6 +25,14 @@ import io.github.chloeji.svtrail.util.SaveManager;
  */
 public class GameRunner {
     private static final int HEAVY_TRAFFIC_MORALE_DROP = 5;
+
+    // Heavy-traffic probability per leg. Applied as a random roll so that
+    // real-world time-of-day (rush hour vs. off-peak) does not make the
+    // Mapbox feature feel either omnipresent or absent: every leg rolls a
+    // 25% baseline, and a heavy Mapbox signal adds 50 percentage points on
+    // top — yielding 75% with Mapbox + heavy, 25% everywhere else.
+    private static final double BASELINE_HEAVY_PROBABILITY = 0.25;
+    private static final double MAPBOX_HEAVY_BOOST = 0.5;
 
     // ANSI color escapes for the startup warning. Modern terminals (iTerm,
     // Terminal.app, Windows Terminal, most IDE consoles) render these; legacy
@@ -38,6 +48,7 @@ public class GameRunner {
     private final SaveManager saveManager;
     private final InputHandler inputHandler;
     private final DisplayManager display;
+    private final Random random;
     private StartupState state;
 
     /**
@@ -51,6 +62,7 @@ public class GameRunner {
         saveManager = new SaveManager();
         inputHandler = new InputHandler();
         display = new DisplayManager();
+        random = new Random();
     }
 
     // ==========================================
@@ -162,7 +174,7 @@ public class GameRunner {
     private void travel(WeatherData weather) {
         Location origin = routeMap.getLocation(state.getCurrentIndex());
         Location next = routeMap.getLocation(state.getCurrentIndex() + 1);
-        applyMapboxEffects(origin, next);
+        applyTrafficEffects(origin, next);
 
         state.travelToNextStop(weather.isBadWeather());
         Location arrived = routeMap.getLocation(state.getCurrentIndex());
@@ -172,22 +184,33 @@ public class GameRunner {
     }
 
     /**
-     * Queries Mapbox for the current leg and, when traffic is heavy,
-     * applies a morale drop before the base travel cost is charged.
-     * Silently no-ops when Mapbox is unavailable.
+     * Decides whether this leg counts as heavy traffic and, if so, applies
+     * a morale drop before the base travel cost is charged. The probability
+     * is a 25% random baseline plus a 50-point boost when Mapbox is configured
+     * and reports the leg as heavy. This decouples gameplay impact from the
+     * player's real-world clock so the feature feels present at any hour, while
+     * still letting real Mapbox data raise the chance during actual congestion.
+     * When Mapbox is unconfigured or the API call fails, only the 25% baseline
+     * applies.
      */
-    private void applyMapboxEffects(Location origin, Location next) {
+    private void applyTrafficEffects(Location origin, Location next) {
         if (next == null) return;
         RouteInfo info = mappingService.getRouteInfo(origin, next);
-        if (info == null) return;
+        boolean mapboxSignalsHeavy = info != null && info.heavyTraffic();
 
-        if (info.heavyTraffic()) {
-            System.out.println();
+        double probability = BASELINE_HEAVY_PROBABILITY
+                + (mapboxSignalsHeavy ? MAPBOX_HEAVY_BOOST : 0.0);
+        if (random.nextDouble() >= probability) return;
+
+        System.out.println();
+        if (mapboxSignalsHeavy) {
             System.out.println("🚦 Heavy traffic on the route — "
                     + info.trafficMinutes() + " min vs usual "
                     + info.freeFlowMinutes() + " min. Team stuck in the car.");
-            state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0));
+        } else {
+            System.out.println("🚦 Heavy traffic on the route — team stuck in the car.");
         }
+        state.applyEventEffects(new Effects(0, -HEAVY_TRAFFIC_MORALE_DROP, 0, 0));
     }
 
     private void rest() {

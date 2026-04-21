@@ -228,9 +228,19 @@ Fallback: on network failure or non-2xx response, `WeatherService` returns rando
 
 Mapping/Routing was a natural fit for the second API. Mapbox returns a traffic-aware driving duration between two lat/lon points, which maps directly to the "stuck in traffic" gameplay hook.
 
-On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` and `driving`). If `trafficDuration > 1.5 × freeFlowDuration` the leg is flagged "heavy traffic" and the team takes a -5 morale hit, stacking with the base travel cost and the weather penalty.
+On each Travel action, `MappingService.getRouteInfo` makes two calls (`driving-traffic` and `driving`) and flags the leg as heavy when `trafficDuration > 1.5 × freeFlowDuration`. When the leg is ruled heavy traffic the team takes a -5 morale hit, stacking with the base travel cost and the weather penalty.
 
-Token resolution checks `System.getenv("MAPBOX_TOKEN")` first, then a `MAPBOX_TOKEN=` line in `.env` at the project root. When both are missing, `GameRunner.start` prints one warning and the Mapbox code path short-circuits — any network, JSON, or non-2xx failure degrades to the same path.
+**Probabilistic application** — the heavy-traffic penalty is not applied every time Mapbox reports congestion; it is rolled per leg so the feature does not hinge on the player's real-world clock. The probability is a **25% baseline** on every leg, plus a **+50-percentage-point boost** when Mapbox is configured and reports the leg as heavy:
+
+| Condition | P(heavy traffic this leg) |
+| --- | --- |
+| Mapbox configured, reports heavy | 75% |
+| Mapbox configured, reports clear | 25% |
+| Mapbox unconfigured / API failed | 25% |
+
+Without this, off-peak players would never see the feature and rush-hour players would be penalized on every leg; the roll smooths both extremes while keeping Mapbox's real signal meaningful. The random baseline also means the game still has traffic variance when the token is absent — only the Mapbox-boost upside is gated on the API being available.
+
+Token resolution checks `System.getenv("MAPBOX_TOKEN")` first, then a `MAPBOX_TOKEN=` line in `.env` at the project root. When both are missing, `GameRunner.start` prints one warning; any network, JSON, or non-2xx failure during play degrades silently to the 25%-baseline path.
 
 ### Data Modeling
 
