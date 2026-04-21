@@ -277,5 +277,6 @@ AI assistance was used on this project for:
 - **Boilerplate generation**: JavaDoc comments, unit test assertion scaffolding, and constructors for test stubs.
 - **Static data lookup**: the 10-city lat/lon list, WMO weather-code → human-description mappings, and Mapbox Directions API URL format.
 - **Prose polish**: README phrasing and the design-notes section.
+- **Git workflow prose**: drafting commit messages and pull request descriptions from the staged diff.
 
 I designed the package architecture, wrote the core game loop and `StartupState` mutation logic, chose the trade-offs (single mutable state class, records for everything else, event-only-after-travel rule, graceful API fallback strategy), wrote the weather-conditional event predicate design, and reviewed every AI suggestion before accepting it.
