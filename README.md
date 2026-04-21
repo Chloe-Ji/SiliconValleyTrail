@@ -182,6 +182,7 @@ Features built on top of the core requirements:
 - **Upfront reward/penalty disclosure.** Every action and event choice lists its exact resource impact inline in the menu (e.g., `-$1,000 cash, -3 coffee` on the daily tax line, `+$8000 cash, +10 morale, -5 coffee` on event choices). No hidden costs — players always know what a choice will do before confirming.
 - **Once-per-day coffee boost.** A free tactical action (#4) that spends 5 coffee for +15 morale, rate-limited to one use per day. Adds a meaningful short-term lever: burn coffee now for a morale lift, or hold it for a rougher day.
 - **Two external APIs blended with probabilistic gameplay.** Open-Meteo (weather) and Mapbox (traffic) both feed live data into the game — bad weather raises travel cost and gates two conditional events, and heavy traffic is applied via a probabilistic roll so the feature stays lively whether the token is configured or not, and whether the player runs at rush hour or midnight.
+- **Save and resume across sessions.** Menu option 5 serializes the full `StartupState` to `save.json` via Gson; the main menu's **Load Game** option restores it on next launch. No auto-save — saving is a deliberate player choice, which keeps quit-to-menu and Ctrl+C as clean "abandon this run" exits.
 
 ## Architecture
 
